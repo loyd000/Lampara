@@ -51,13 +51,17 @@ function calculateSavings() {
     document.getElementById('paybackPeriod').textContent = paybackYears === 'N/A' ? paybackYears : paybackYears + ' years';
 }
 
-// Initialize calculator
+// Initialize calculator and new features
 document.addEventListener('DOMContentLoaded', function () {
     // Set default active button
     const defaultBtn = document.querySelector('[data-size="6.6"]');
     if (defaultBtn) defaultBtn.classList.add('active');
 
-    calculateSavings();
+    if (typeof calculateSavings === 'function') calculateSavings();
+
+    // Initialize Phase 4 Features
+    initScrollAnimations();
+    initFloatingElements();
 });
 
 // Smooth scrolling for navigation links
@@ -84,3 +88,41 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // ==================== Gallery Page Functionality ====================
 // Note: Gallery logic and lightbox interactions are now handled by:
 // js/gallery-loader.js (integrates with Supabase)
+
+// ==================== Phase 4: Interactions ====================
+
+function initScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.animationPlayState = 'running';
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.animate-fade-up, .animate-fade-down').forEach(el => {
+        el.style.opacity = '0';
+        el.style.animationPlayState = 'paused';
+        observer.observe(el);
+    });
+}
+
+function initFloatingElements() {
+    const backToTop = document.getElementById('backToTop');
+    if (!backToTop) return;
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    });
+
+    backToTop.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}

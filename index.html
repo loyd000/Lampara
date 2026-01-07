@@ -14,8 +14,7 @@
     <meta property="og:type" content="business.business">
     <meta property="og:url" content="https://lampara-rho.vercel.app/">
     <meta property="og:image" content="https://lampara-rho.vercel.app/assets/gallery/project-01/main.jpg">
-    <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23ffd700'/><circle cx='50' cy='50' r='35' fill='%231e3a5f'/><path d='M50 20 L65 45 L50 70 L35 45 Z' fill='%23ffd700'/></svg>">
+    <link rel="icon" type="image/png" href="assets/logo.png">
     <title>Lampara - Solar Power Installation</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -26,7 +25,9 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <div class="logo">Lampara</div>
+                <a href="#home" class="logo-link">
+                    <img src="assets/logo.png" alt="Lampara Solar" class="logo-img">
+                </a>
                 <nav>
                     <ul id="nav-menu">
                         <li><a href="#home">Home</a></li>
@@ -422,7 +423,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-column">
-                    <div class="logo footer-logo">Lampara</div>
+                    <img src="assets/logo.png" alt="Lampara Solar" class="footer-logo-img">
                     <p>Empowering homes with clean, renewable energy.</p>
                 </div>
                 <div class="footer-column">
@@ -447,6 +448,20 @@
             </div>
         </div>
     </footer>
+
+    <!-- Floating Actions -->
+    <a href="#" class="back-to-top" id="backToTop" title="Back to Top">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 15l-6-6-6 6" />
+        </svg>
+    </a>
+    <a href="https://m.me/lamparaeis" target="_blank" class="messenger-fab" title="Chat with us">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff">
+            <path
+                d="M12 2C6.48 2 2 6.03 2 11c0 2.87 1.51 5.43 3.89 7.18H3v3.5l3.52-1.93c1.68.73 3.55 1.15 5.48 1.15 5.52 0 10-4.03 10-9S17.52 2 12 2zm1.19 12.11L10.5 11.23l-4.37 4.19 4.81-5.11 2.69 2.88 4.36-4.18-4.8 5.1z" />
+        </svg>
+    </a>
 
     <script src="js/script.js"></script>
 
