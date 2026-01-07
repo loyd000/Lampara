@@ -1634,3 +1634,255 @@
                 gap: 2rem;
             }
         }
+
+        /* ==========================================================================
+   Phase 2: Core Components Redesign
+   ========================================================================== */
+
+        /* Trust Indicators */
+        .trust-stats {
+            padding: 3rem 0;
+            margin-top: -4rem;
+            /* Overlap hero */
+            position: relative;
+            z-index: 10;
+        }
+
+        .redesign-hero {
+            padding-bottom: 6rem;
+            /* Space for overlap */
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--navy-800);
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        /* Redesigned Packages */
+        .redesign-packages {
+            background: var(--gray-50);
+        }
+
+        .package-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 3rem;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (min-width: 768px) {
+            .package-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .glass-card {
+            background: var(--white);
+            border-radius: 24px;
+            padding: 2.5rem;
+            position: relative;
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-md);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .glass-card.featured {
+            border: 2px solid var(--gold-500);
+            box-shadow: var(--shadow-gold);
+        }
+
+        .badge-popular {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--gradient-gold);
+            color: var(--navy-900);
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .card-header {
+            margin-bottom: 2rem;
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: var(--gray-100);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .featured .icon-box {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--gold-600);
+        }
+
+        .package-subtitle {
+            color: var(--gray-600);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .price-tag {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--navy-900);
+            line-height: 1;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .price-tag .currency {
+            font-size: 1.5rem;
+            margin-top: 8px;
+            margin-right: 4px;
+        }
+
+        .price-tag .suffix {
+            font-size: 1.5rem;
+            margin-top: 8px;
+            color: var(--gray-500);
+            margin-left: 2px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .check-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green-500);
+            border-radius: 50%;
+            margin-right: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .tier-list {
+            background: var(--gray-50);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .tier-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--gray-200);
+            font-size: 0.95rem;
+        }
+
+        .tier-row:last-child {
+            border-bottom: none;
+        }
+
+        .tier-row.highlight {
+            color: var(--navy-700);
+            font-weight: 600;
+            background: rgba(255, 215, 0, 0.1);
+            margin: 0 -1.5rem;
+            padding: 8px 1.5rem;
+        }
+
+        .full-width {
+            width: 100%;
+        }
+
+        /* Redesign Calculator */
+        .redesign-calculator {
+            background: var(--white);
+            position: relative;
+            padding-top: 6rem;
+            /* Clean separation */
+        }
+
+        .redesign-calculator .calculator-content {
+            background: var(--white);
+            border-radius: 30px;
+            padding: 3rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-100);
+            max-width: 800px;
+            margin: 0 auto;
+        }
