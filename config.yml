@@ -1,6 +1,5 @@
 backend:
-  name: github
-  repo: loyd000/Lampara
+  name: git-gateway
   branch: main
 
 media_folder: "assets/gallery"
