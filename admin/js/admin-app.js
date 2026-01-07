@@ -131,8 +131,8 @@ function renderProjects(projects) {
 <p style="font-size: 13px; color: #666;">${project.specs}</p>
             <div class="project-photos">
                 ${project.project_photos.slice(0, 4).map(photo => `
-                    <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}" 
-                         class="project-photo-thumb" alt="">
+                    <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}?width=200&resize=cover" 
+                         class="project-photo-thumb" alt="" loading="lazy">
                 `).join('')}
                 ${project.project_photos.length > 4 ? `<span style="font-size: 12px; color: #666;">+${project.project_photos.length - 4} more</span>` : ''}
             </div>
@@ -225,7 +225,7 @@ async function editProject(projectId) {
     // Show existing photos
     photoPreview.innerHTML = project.project_photos.map(photo => `
         <div class="photo-preview-item">
-            <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}" alt="">
+            <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}?width=200&resize=cover" alt="" loading="lazy">
             <button type="button" class="photo-remove" onclick="removeExistingPhoto('${photo.id}')">×</button>
         </div>
     `).join('');

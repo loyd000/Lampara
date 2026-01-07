@@ -11,11 +11,10 @@ async function loadGallery() {
     // Check if we're on the gallery page
     if (!galleryGrid) return;
 
-    // Show skeleton/loading state?
-    // For now, let's keep the existing HTML as placeholder to prevent layout shift
-    // or just clear it if we want to be clean.
-    // Let's clear it to avoid duplication if it loads fast.
-    galleryGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align: center; padding: 50px;">Loading projects...</div>';
+    // Skeleton Loader (Prevent Layout Shift)
+    galleryGrid.innerHTML = Array(6).fill(0).map(() =>
+        '<div class="skeleton" style="min-height: 400px; height: 100%;"></div>'
+    ).join('');
 
     try {
         // Fetch projects with photos
@@ -62,7 +61,9 @@ function renderGallery(projects) {
             supabaseClient.storage.from('project-images').getPublicUrl(p.storage_path).data.publicUrl
         );
 
-        const coverImage = imageUrls[0] || 'assets/placeholder.jpg'; // Fallback
+        const coverUrl = imageUrls[0];
+        // Optimization: Request smaller image for grid thumbnail
+        const coverImage = coverUrl ? `${coverUrl}?width=600&resize=cover` : 'assets/placeholder.jpg';
         const photoCount = imageUrls.length;
 
         // Create Card HTML

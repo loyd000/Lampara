@@ -1478,8 +1478,54 @@
         .system-options {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            /* Try 4 in a row? Or 2x2. User asked for balance. */
             gap: 1rem;
+        }
+
+        .system-btn {
+            padding: 1rem;
+            min-height: 50px;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid var(--gray-300);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--gray-800);
+        }
+
+        .system-btn:hover {
+            border-color: var(--gold-500);
+            background: var(--gray-50);
+        }
+
+        .system-btn.active {
+            background: var(--navy-900);
+            color: white;
+            border-color: var(--navy-900);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+        }
+
+        /* Loading Skeleton */
+        .skeleton {
+            background: #e2e8f0;
+            min-height: 400px;
+            border-radius: 24px;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
         }
 
         @media (max-width: 600px) {
