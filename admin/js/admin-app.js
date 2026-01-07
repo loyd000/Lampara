@@ -98,7 +98,7 @@ async function loadProjects() {
     showLoading(true);
 
     // Fetch projects with their photos
-    const { data: projects, error } = await supabase
+    const { data: projects, error } = await supabaseClient
         .from('projects')
         .select(`
             *,
@@ -162,7 +162,7 @@ async function handleProjectSubmit(e) {
 
         if (projectId) {
             // Update existing project
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('projects')
                 .update(projectData)
                 .eq('id', projectId);
@@ -170,7 +170,7 @@ async function handleProjectSubmit(e) {
             if (error) throw error;
         } else {
             // Create new project
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('projects')
                 .insert([projectData])
                 .select()
@@ -198,7 +198,7 @@ async function handleProjectSubmit(e) {
 async function editProject(projectId) {
     showLoading(true);
 
-    const { data: project, error } = await supabase
+    const { data: project, error } = await supabaseClient
         .from('projects')
         .select(`
             *,
@@ -242,7 +242,7 @@ async function deleteProject(projectId) {
     showLoading(true);
 
     // Delete photos from storage first
-    const { data: photos } = await supabase
+    const { data: photos } = await supabaseClient
         .from('project_photos')
         .select('storage_path')
         .eq('project_id', projectId);
@@ -253,7 +253,7 @@ async function deleteProject(projectId) {
     }
 
     // Delete project (cascade will delete project_photos)
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('projects')
         .delete()
         .eq('id', projectId);
@@ -296,7 +296,7 @@ async function removeExistingPhoto(photoId) {
     showLoading(true);
 
     // Get storage path
-    const { data: photo } = await supabase
+    const { data: photo } = await supabaseClient
         .from('project_photos')
         .select('storage_path')
         .eq('id', photoId)
@@ -306,7 +306,7 @@ async function removeExistingPhoto(photoId) {
     await supabaseClient.storage.from('project-images').remove([photo.storage_path]);
 
     // Delete from database
-    await supabase
+    await supabaseClient
         .from('project_photos')
         .delete()
         .eq('id', photoId);
