@@ -21,7 +21,13 @@
 </head>
 
 <body>
-    <!-- Netlify CMS will inject its interface here -->
+    <!-- Decap CMS will inject its interface here -->
+    <script>
+        // Initialize Decap CMS
+        if (window.CMS) {
+            CMS.init();
+        }
+    </script>
 </body>
 
 </html>
