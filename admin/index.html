@@ -1,19 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lampara Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lampara Admin Panel</title>
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23ffd700'/><circle cx='50' cy='50' r='35' fill='%231e3a5f'/><path d='M50 20 L65 45 L50 70 L35 45 Z' fill='%23ffd700'/></svg>">
-    <!-- Netlify Identity Widget -->
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <link rel="stylesheet" href="css/admin-styles.css">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
-    <!-- Include the Decap CMS script -->
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>🌟 Lampara Admin</h1>
+                <p>Gallery Management System</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="screen" style="display: none;">
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>🌟 Lampara Gallery</h1>
+                <div class="header-actions">
+                    <span id="userEmail" class="user-email"></span>
+                    <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <div class="admin-actions">
+                <button id="addProjectBtn" class="btn btn-primary">+ Add New Project</button>
+            </div>
+
+            <div id="projectsList" class="projects-list">
+                <!-- Projects will be loaded here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Project</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="projectForm">
+                <input type="hidden" id="projectId">
+
+                <div class="form-group">
+                    <label for="projectTitle">Project Title *</label>
+                    <input type="text" id="projectTitle" required placeholder="e.g., 18.6kWp Hybrid System">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectSpecs">System Specifications *</label>
+                    <input type="text" id="projectSpecs" required
+                        placeholder="e.g., AE Bifacial Solar with 3x Dyness 280Ah">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectLocation">Location *</label>
+                    <input type="text" id="projectLocation" required placeholder="e.g., Padre Garcia, Batangas">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectCategory">Category *</label>
+                    <select id="projectCategory" required>
+                        <option value="">Select category...</option>
+                        <option value="residential">Residential</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="industrial">Industrial</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectDescription">Description *</label>
+                    <textarea id="projectDescription" required rows="4"
+                        placeholder="Describe the project..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Project Photos</label>
+                    <div class="photo-upload">
+                        <input type="file" id="photoInput" accept="image/*" multiple style="display: none;">
+                        <button type="button" id="uploadPhotoBtn" class="btn btn-secondary">
+                            📸 Upload Photos
+                        </button>
+                        <p class="help-text">Click to select multiple images (JPG, PNG, WebP)</p>
+                    </div>
+                    <div id="photoPreview" class="photo-preview"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Project</button>
+                </div>
+                <div id="formError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/admin-app.js"></script>
 </body>
 
 </html>
