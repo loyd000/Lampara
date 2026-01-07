@@ -26,7 +26,7 @@ init();
 
 async function init() {
     // Check if user is already logged in
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
         currentUser = session.user;
         showDashboard();
@@ -69,7 +69,7 @@ async function handleLogin(e) {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password
     });
@@ -85,7 +85,7 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     currentUser = null;
     showLogin();
 }
@@ -131,7 +131,7 @@ function renderProjects(projects) {
 <p style="font-size: 13px; color: #666;">${project.specs}</p>
             <div class="project-photos">
                 ${project.project_photos.slice(0, 4).map(photo => `
-                    <img src="${supabase.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}" 
+                    <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}" 
                          class="project-photo-thumb" alt="">
                 `).join('')}
                 ${project.project_photos.length > 4 ? `<span style="font-size: 12px; color: #666;">+${project.project_photos.length - 4} more</span>` : ''}
@@ -225,7 +225,7 @@ async function editProject(projectId) {
     // Show existing photos
     photoPreview.innerHTML = project.project_photos.map(photo => `
         <div class="photo-preview-item">
-            <img src="${supabase.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}" alt="">
+            <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}" alt="">
             <button type="button" class="photo-remove" onclick="removeExistingPhoto('${photo.id}')">×</button>
         </div>
     `).join('');
@@ -249,7 +249,7 @@ async function deleteProject(projectId) {
 
     if (photos && photos.length > 0) {
         const paths = photos.map(p => p.storage_path);
-        await supabase.storage.from('project-images').remove(paths);
+        await supabaseClient.storage.from('project-images').remove(paths);
     }
 
     // Delete project (cascade will delete project_photos)
@@ -303,7 +303,7 @@ async function removeExistingPhoto(photoId) {
         .single();
 
     // Delete from storage
-    await supabase.storage.from('project-images').remove([photo.storage_path]);
+    await supabaseClient.storage.from('project-images').remove([photo.storage_path]);
 
     // Delete from database
     await supabase
@@ -325,7 +325,7 @@ async function uploadPhotos(projectId) {
         const fileName = `${projectId}/${Date.now()}-${i}.${fileExt}`;
 
         // Upload to storage
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from('project-images')
             .upload(fileName, file);
 
@@ -335,7 +335,7 @@ async function uploadPhotos(projectId) {
         }
 
         // Add to database
-        await supabase.from('project_photos').insert([{
+        await supabaseClient.from('project_photos').insert([{
             project_id: projectId,
             storage_path: fileName,
             is_cover: i === 0, // First photo is cover
