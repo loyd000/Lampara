@@ -69,6 +69,9 @@ function selectSystem(size, event) {
 }
 
 async function calculateSavings() {
+    const savingsElement = document.getElementById('monthlySavings');
+    if (!savingsElement) return; // Exit if calculator elements don't exist
+
     // Constants defined by user
     const SUN_HOURS = 4.5;
     const DERATING_FACTOR = 0.8;
