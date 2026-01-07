@@ -181,7 +181,8 @@
             /* Use a high-quality solar image. Fallback to gradient if missing. */
             background: url('../assets/gallery/project-03/main.jpg') no-repeat center center/cover;
             margin-top: 0;
-            padding-top: var(--nav-height);
+            padding-top: 180px;
+            /* Adjusted for floating glass nav */
             overflow: hidden;
         }
 
@@ -2478,11 +2479,19 @@
         }
 
         .logo-icon-img {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             object-fit: contain;
-            /* background: white; Optional: if logo needs bg */
-            border-radius: 8px;
+            background: white;
+            padding: 8px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .logo-icon-img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(255, 165, 0, 0.3);
         }
 
         /* Removed .logo-icon emoji styles */
