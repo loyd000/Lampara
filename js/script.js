@@ -20,15 +20,11 @@ function selectSystem(size, event) {
 }
 
 function calculateSavings() {
-    const monthlyBill = parseFloat(document.getElementById('monthlyBill').value) || 0;
-
-    // Solar efficiency rate (percentage of bill that can be offset)
-    const efficiencyRate = {
-        3.3: 0.35,
-        6.6: 0.70,
-        8.3: 0.88,
-        12.2: 1.0
-    };
+    // Constants defined by user
+    const SUN_HOURS = 4.5;
+    const DERATING_FACTOR = 0.8;
+    const ELECTRICITY_RATE = 12; // PHP per kWh
+    const DAYS_PER_MONTH = 30;
 
     const systemPrices = {
         3.3: 137000,
@@ -37,11 +33,15 @@ function calculateSavings() {
         12.2: 337000
     };
 
-    const rate = efficiencyRate[selectedSystem] || 0.70;
+    // Calculate production and savings based on system size
+    // Formula: Size * Sun Hours * Derating * Rate * Days
+    const dailyProduction = selectedSystem * SUN_HOURS * DERATING_FACTOR;
+    const dailySavings = dailyProduction * ELECTRICITY_RATE;
+    const monthlySavings = dailySavings * DAYS_PER_MONTH;
+    const annualSavings = monthlySavings * 12;
+
     const systemPrice = systemPrices[selectedSystem] || 195000;
 
-    const monthlySavings = monthlyBill * rate;
-    const annualSavings = monthlySavings * 12;
     const paybackYears = annualSavings > 0
         ? (systemPrice / annualSavings).toFixed(1)
         : 'N/A';
