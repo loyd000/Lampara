@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Browse our portfolio of solar power installations across Metro Manila and nearby provinces. See residential, commercial, and industrial solar projects completed by Lampara.">
+    <meta name="keywords" content="solar gallery, solar installations, solar projects, Metro Manila, Cavite, Laguna">
+    <meta name="author" content="Lampara Solar Power Installation">
+    <meta property="og:title" content="Installation Gallery - Lampara Solar">
+    <meta property="og:description"
+        content="Browse our portfolio of solar power installations across Metro Manila and nearby provinces.">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23ffd700'/><circle cx='50' cy='50' r='35' fill='%231e3a5f'/><path d='M50 20 L65 45 L50 70 L35 45 Z' fill='%23ffd700'/></svg>">
+    <title>Installation Gallery - Lampara Solar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo"><a href="index.html" style="color: inherit; text-decoration: none;">Lampara</a></div>
+                <nav>
+                    <ul id="nav-menu">
+                        <li><a href="index.html#home">Home</a></li>
+                        <li><a href="index.html#about">About</a></li>
+                        <li><a href="index.html#packages">Packages</a></li>
+                        <li><a href="gallery.html" class="active">Gallery</a></li>
+                        <li><a href="index.html#solar-info">Solar Info</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="menu-toggle" aria-label="Toggle mobile menu" role="button" tabindex="0"
+                    onclick="toggleMenu()" onkeydown="if(event.key==='Enter') toggleMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="gallery-hero">
+        <div class="container">
+            <h1>Our Solar Installations</h1>
+            <p>Explore our portfolio of completed solar power projects across Metro Manila and nearby provinces</p>
+        </div>
+    </section>
+
+    <section class="gallery-main">
+        <div class="container">
+            <div class="gallery-filters">
+                <button class="filter-btn active" data-filter="all">All Projects</button>
+                <button class="filter-btn" data-filter="residential">Residential</button>
+                <button class="filter-btn" data-filter="commercial">Commercial</button>
+                <button class="filter-btn" data-filter="industrial">Industrial</button>
+            </div>
+
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- Project 1: 18.6kWp Hybrid - Padre Garcia, Batangas -->
+                <div class="gallery-card" data-category="residential"
+                    data-images='["assets/gallery/project-01/main.jpg","assets/gallery/project-01/photo-1.jpg","assets/gallery/project-01/photo-2.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-01/main.jpg"
+                            alt="18.6kWp Hybrid Solar System in Padre Garcia, Batangas" loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(0)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 3 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>18.6kWp Hybrid System</h3>
+                        <p class="project-specs">AE Bifacial Solar with 3x Dyness 280Ah</p>
+                        <p class="project-location">📍 Padre Garcia, Batangas</p>
+                        <p class="project-description">Complete hybrid system with 16kW Solis Hybrid Inverter and
+                            battery backup. Powering progress right at home.</p>
+                    </div>
+                </div>
+
+                <!-- Project 2: Haven in Lipa -->
+                <div class="gallery-card" data-category="residential"
+                    data-images='["assets/gallery/project-02/main.jpg","assets/gallery/project-02/photo-1.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-02/main.jpg"
+                            alt="Residential Solar Installation at Haven in Lipa" loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(1)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 2 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>Haven Residential Project</h3>
+                        <p class="project-specs">Hybrid Solar System</p>
+                        <p class="project-location">📍 Haven, Lipa City</p>
+                        <p class="project-description">Premium residential solar installation delivering clean energy
+                            and significant savings for homeowners.</p>
+                    </div>
+                </div>
+
+                <!-- Project 3: 55kWp Commercial -->
+                <div class="gallery-card" data-category="commercial"
+                    data-images='["assets/gallery/project-03/main.jpg","assets/gallery/project-03/photo-1.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-03/main.jpg" alt="55kWp Commercial Solar Installation"
+                            loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(2)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 2 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>55kWp Commercial Installation</h3>
+                        <p class="project-specs">Large-Scale Solar System</p>
+                        <p class="project-location">📍 Metro Manila</p>
+                        <p class="project-description">Professional commercial solar installation delivering clean,
+                            reliable energy for sustainable business operations.</p>
+                    </div>
+                </div>
+
+                <!-- Project 4: 10kW Grid-Tie Expansion -->
+                <div class="gallery-card" data-category="residential"
+                    data-images='["assets/gallery/project-04/main.jpg","assets/gallery/project-04/photo-1.jpg","assets/gallery/project-04/photo-2.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-04/main.jpg" alt="10kW Grid-Tie System Expansion in Muntinlupa"
+                            loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(3)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 3 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>10kW Grid-Tie Expansion</h3>
+                        <p class="project-specs">Additional On-Grid System</p>
+                        <p class="project-location">📍 Muntinlupa City</p>
+                        <p class="project-description">System expansion for existing solar setup, increasing capacity
+                            and energy production with net metering.</p>
+                    </div>
+                </div>
+
+                <!-- Project 5: Hybrid On-Grid System -->
+                <div class="gallery-card" data-category="residential"
+                    data-images='["assets/gallery/project-05/main.jpg","assets/gallery/project-05/photo-1.jpg","assets/gallery/project-05/photo-2.jpg","assets/gallery/project-05/photo-3.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-05/main.jpg" alt="Hybrid On-Grid PV System for Cooling"
+                            loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(4)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 4 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>Hybrid On-Grid PV System</h3>
+                        <p class="project-specs">AC-Optimized Solar Solution</p>
+                        <p class="project-location">📍 Metro Manila</p>
+                        <p class="project-description">Advanced hybrid system designed to power air conditioning and
+                            reduce cooling costs significantly.</p>
+                    </div>
+                </div>
+
+                <!-- Project 6: Residential Hybrid System -->
+                <div class="gallery-card" data-category="residential"
+                    data-images='["assets/gallery/project-06/main.jpg","assets/gallery/project-06/photo-1.jpg","assets/gallery/project-06/photo-2.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-06/main.jpg" alt="Residential Hybrid On-Grid Installation"
+                            loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(5)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 3 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>Residential Hybrid System</h3>
+                        <p class="project-specs">On-Grid PV with Battery Backup</p>
+                        <p class="project-location">📍 Batangas Province</p>
+                        <p class="project-description">Complete hybrid setup providing reliable backup power and
+                            maximizing energy independence.</p>
+                    </div>
+                </div>
+
+                <!-- Project 7: On-Grid PV System -->
+                <div class="gallery-card" data-category="residential"
+                    data-images='["assets/gallery/project-07/main.jpg","assets/gallery/project-07/photo-1.jpg","assets/gallery/project-07/photo-2.jpg"]'>
+                    <div class="gallery-image">
+                        <img src="assets/gallery/project-07/main.jpg" alt="On-Grid PV System Installation"
+                            loading="lazy">
+                        <div class="gallery-overlay">
+                            <button class="view-btn" onclick="openLightbox(6)">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="m21 21-4.35-4.35"></path>
+                                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                                </svg>
+                                View 3 Photos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="gallery-info">
+                        <h3>On-Grid PV System</h3>
+                        <p class="project-specs">Grid-Tied Solar Installation</p>
+                        <p class="project-location">📍 Cavite Province</p>
+                        <p class="project-description">Efficient on-grid system with net metering, reducing electricity
+                            bills while supporting renewable energy.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-note">
+                <p>💡 <strong>Want to see your property transformed?</strong> Contact us today for a free consultation
+                    and quote. We'll design a custom solar solution tailored to your energy needs.</p>
+                <a href="index.html#contact" class="cta-button">Get Your Free Quote</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+            <button class="lightbox-prev" onclick="changeLightboxImage(-1)">&#10094;</button>
+            <button class="lightbox-next" onclick="changeLightboxImage(1)">&#10095;</button>
+            <img id="lightbox-image" src="" alt="Project image">
+            <div class="lightbox-caption" id="lightbox-caption"></div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Lampara Solar Power Installation. All rights reserved.</p>
+            <p style="margin-top: 0.5rem;"><a href="index.html"
+                    style="color: var(--gold-500); text-decoration: none;">Back to Home</a></p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>

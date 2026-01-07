@@ -1,0 +1,23 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "assets/gallery"
+public_folder: "/assets/gallery"
+
+collections:
+  - name: "projects"
+    label: "Gallery Projects"
+    folder: "content/projects"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - {label: "Project Title", name: "title", widget: "string"}
+      - {label: "System Specifications", name: "specs", widget: "string"}
+      - {label: "Location", name: "location", widget: "string"}
+      - {label: "Category", name: "category", widget: "select", options: ["residential", "commercial", "industrial"]}
+      - {label: "Description", name: "description", widget: "text"}
+      - {label: "Cover Photo", name: "coverPhoto", widget: "image"}
+      - {label: "Additional Photos", name: "photos", widget: "list", field: {label: "Photo", name: "photo", widget: "image"}}
+      - {label: "Date Added", name: "date", widget: "datetime"}
+      - {label: "Order", name: "order", widget: "number", default: 1}
