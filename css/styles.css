@@ -2419,3 +2419,185 @@
             color: var(--white);
             letter-spacing: -0.5px;
         }
+
+        /* ==========================================================================
+   Gallery Lightbox Styling (Added Phase 5 Polish)
+   ========================================================================== */
+
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-content {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .lightbox img#lightbox-image {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .lightbox-caption {
+            color: var(--gray-300);
+            margin-top: 1rem;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        /* Thumbnails Strip */
+        .lightbox-thumbnails {
+            display: flex;
+            gap: 10px;
+            margin-top: 1.5rem;
+            overflow-x: auto;
+            max-width: 100%;
+            padding: 5px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Hide scrollbar */
+        .lightbox-thumbnails::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .lightbox-thumbnails::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .lightbox-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            opacity: 0.5;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .lightbox-thumb:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+
+        .lightbox-thumb.active {
+            opacity: 1;
+            border-color: var(--gold-500);
+            transform: scale(1.05);
+        }
+
+        /* Navigation Buttons */
+        .lightbox-prev,
+        .lightbox-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .lightbox-prev:hover,
+        .lightbox-next:hover {
+            background: var(--gold-500);
+            color: var(--navy-900);
+        }
+
+        .lightbox-prev {
+            left: -70px;
+        }
+
+        .lightbox-next {
+            right: -70px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: -50px;
+            right: 0;
+            background: none;
+            border: none;
+            color: var(--gray-300);
+            font-size: 2.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            line-height: 1;
+        }
+
+        .lightbox-close:hover {
+            color: var(--gold-500);
+            transform: rotate(90deg);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+
+            .lightbox-prev,
+            .lightbox-next {
+                width: 40px;
+                height: 40px;
+                font-size: 1.5rem;
+                top: auto;
+                bottom: 25%;
+                /* Move below active image area */
+                transform: none;
+            }
+
+            .lightbox-prev {
+                left: 10px;
+            }
+
+            .lightbox-next {
+                right: 10px;
+            }
+
+            .lightbox-close {
+                top: 10px;
+                right: 10px;
+                position: fixed;
+                /* Fix to screen corner on mobile */
+            }
+
+            .lightbox img#lightbox-image {
+                max-height: 60vh;
+            }
+        }
