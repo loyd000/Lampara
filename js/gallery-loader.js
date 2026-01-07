@@ -91,6 +91,7 @@ function renderGallery(projects) {
                 <h3 class="gallery-title">${project.title}</h3>
                 <p class="gallery-specs">${project.specs}</p>
                 <p class="gallery-meta">📍 ${project.location}</p>
+                <p class="gallery-description" style="margin-top: 0.5rem; line-height: 1.4; font-size: 0.9rem;">${project.description}</p>
             </div>
         `;
 
