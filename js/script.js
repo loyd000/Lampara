@@ -19,19 +19,15 @@ function selectSystem(size, event) {
     calculateSavings();
 }
 
-function calculateSavings() {
+async function calculateSavings() {
     // Constants defined by user
     const SUN_HOURS = 4.5;
     const DERATING_FACTOR = 0.8;
     const ELECTRICITY_RATE = 12; // PHP per kWh
     const DAYS_PER_MONTH = 30;
 
-    const systemPrices = {
-        3.3: 137000,
-        6.6: 195000,
-        8.3: 250000,
-        12.2: 337000
-    };
+    const response = await fetch('config/pricing.json');
+    const systemPrices = await response.json();
 
     // Calculate production and savings based on system size
     // Formula: Size * Sun Hours * Derating * Rate * Days
@@ -57,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const defaultBtn = document.querySelector('[data-size="6.6"]');
     if (defaultBtn) defaultBtn.classList.add('active');
 
+    // Make calculateSavings async and call it
     if (typeof calculateSavings === 'function') calculateSavings();
 
     // Initialize Phase 4 Features

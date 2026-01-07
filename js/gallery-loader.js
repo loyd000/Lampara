@@ -112,7 +112,10 @@ function initializeFilters() {
         // But the cards are new.
         // We should replace the listener logic to reference the NEW cards.
 
-        button.replaceWith(button.cloneNode(true)); // Remove old listeners
+        // Fix: Don't clone (destructive). Just adding new listener is fine if we manage it well.
+        // Since initializeFilters is called once per page load usually, or we can use a flag.
+        if (button.dataset.hasListener) return;
+        button.dataset.hasListener = 'true';
     });
 
     // Re-select fresh buttons

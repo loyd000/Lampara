@@ -319,8 +319,7 @@ async function removeExistingPhoto(photoId) {
 }
 
 async function uploadPhotos(projectId) {
-    for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
+    const uploadPromises = selectedFiles.map(async (file, i) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${projectId}/${Date.now()}-${i}.${fileExt}`;
 
@@ -331,17 +330,19 @@ async function uploadPhotos(projectId) {
 
         if (uploadError) {
             console.error('Upload error:', uploadError);
-            continue;
+            return; // Skip this file on error
         }
 
         // Add to database
         await supabaseClient.from('project_photos').insert([{
             project_id: projectId,
             storage_path: fileName,
-            is_cover: i === 0, // First photo is cover
+            is_cover: i === 0, // First photo is cover (logic might need adjustment for concurrent, but roughly okay)
             order_index: i
         }]);
-    }
+    });
+
+    await Promise.all(uploadPromises);
 }
 
 // ========================================
