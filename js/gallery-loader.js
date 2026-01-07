@@ -77,7 +77,7 @@ function renderGallery(projects) {
             <div class="gallery-image">
                 <img src="${coverImage}" alt="${project.title}" loading="lazy">
                 <div class="gallery-overlay">
-                    <button class="view-btn">
+                    <button class="view-btn" onclick="openSupabaseLightbox(${index})">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
@@ -88,8 +88,6 @@ function renderGallery(projects) {
                     </button>
                 </div>
             </div>
-            <!-- Make whole card clickable via stretched link or JS listener -->
-            <a href="javascript:void(0)" onclick="openSupabaseLightbox(${index})" class="card-link-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index: 5;"></a>
             <div class="gallery-info">
                 <h3>${project.title}</h3>
                 <p class="project-specs">${project.specs}</p>
@@ -169,32 +167,10 @@ function openSupabaseLightbox(projectIndex) {
     );
 
     currentLightboxIndex = 0;
-
-    // Render Thumbnails
-    renderLightboxThumbnails();
-
     updateLightboxImage();
 
     document.getElementById('lightbox').classList.add('active');
     document.body.style.overflow = 'hidden'; // Prevent scrolling
-}
-
-function renderLightboxThumbnails() {
-    const container = document.getElementById('lightbox-thumbnails');
-    if (!container) return;
-
-    container.innerHTML = currentProjectImages.map((url, index) => {
-        // Use optimized URL for thumbnail if possible, but we have clean URLs here.
-        // If we want optimization, we append query.
-        const thumbUrl = `${url}?width=100&resize=cover`;
-        return `<img src="${thumbUrl}" class="lightbox-thumb ${index === 0 ? 'active' : ''}" 
-                 onclick="jumpToLightboxImage(${index})" alt="Thumbnail">`;
-    }).join('');
-}
-
-function jumpToLightboxImage(index) {
-    currentLightboxIndex = index;
-    updateLightboxImage();
 }
 
 function closeLightbox() {
@@ -220,26 +196,12 @@ function updateLightboxImage() {
 
     img.src = currentProjectImages[currentLightboxIndex];
     caption.textContent = `Image ${currentLightboxIndex + 1} of ${currentProjectImages.length}`;
-
-    // Update active thumbnail
-    const thumbs = document.querySelectorAll('.lightbox-thumb');
-    thumbs.forEach((t, i) => {
-        if (i === currentLightboxIndex) {
-            t.classList.add('active');
-            t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        } else {
-            t.classList.remove('active');
-        }
-    });
 }
 
 // Global exports
 window.openSupabaseLightbox = openSupabaseLightbox;
 window.closeLightbox = closeLightbox;
-window.openSupabaseLightbox = openSupabaseLightbox;
-window.closeLightbox = closeLightbox;
 window.changeLightboxImage = changeLightboxImage;
-window.jumpToLightboxImage = jumpToLightboxImage;
 
 // Close lightbox on outside click
 document.getElementById('lightbox')?.addEventListener('click', (e) => {
