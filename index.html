@@ -22,32 +22,28 @@
 </head>
 
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <a href="#home" class="logo-link">
-                    <img src="assets/logo.png" alt="Lampara Solar" class="logo-img">
-                    <span class="logo-text">Lampara</span>
-                </a>
-                <nav>
-                    <ul id="nav-menu">
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#packages">Packages</a></li>
-                        <li><a href="gallery.html">Gallery</a></li>
-                        <li><a href="#solar-info">Solar Info</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
-                </nav>
-                <div class="menu-toggle" aria-label="Toggle mobile menu" role="button" tabindex="0"
-                    onclick="toggleMenu()" onkeydown="if(event.key==='Enter') toggleMenu()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>
-        </div>
-    </header>
+    <nav class="navbar-glass">
+        <a href="#home" class="logo-container">
+            <div class="logo-icon">💡</div>
+            <div class="logo-text">Lampara</div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="#home" class="active">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#packages">Packages</a></li>
+            <li><a href="gallery.html">Gallery</a></li>
+            <li><a href="#solar-info">Solar Info</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+
+        <!-- Hamburger for mobile -->
+        <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
 
     <section id="home" class="hero redesign-hero">
         <div class="hero-overlay"></div>

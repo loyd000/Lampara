@@ -1,9 +1,58 @@
-function toggleMenu() {
-    const menu = document.getElementById('nav-menu');
-    const menuToggle = document.querySelector('.menu-toggle');
-    menu.classList.toggle('active');
-    menuToggle.classList.toggle('active');
-}
+// function toggleMenu() {
+//     const menu = document.getElementById('nav-menu');
+//     const menuToggle = document.querySelector('.menu-toggle');
+//     menu.classList.toggle('active');
+//     menuToggle.classList.toggle('active');
+// }
+// Replaced by new Glass Nav Logic
+
+// ========================================
+// Glass Navigation Logic
+// ========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Scroll Effect
+    window.addEventListener('scroll', function () {
+        const navbar = document.querySelector('.navbar-glass');
+        if (!navbar) return;
+
+        if (window.scrollY > 50) { // Trigger earlier than 100 for smoother feel
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
+    // Mobile Menu
+    const hamburger = document.querySelector('.hamburger');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (hamburger && navLinks) {
+        hamburger.addEventListener('click', function (e) {
+            e.stopPropagation(); // Prevent closing immediately
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        // Close menu when clicking a link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', function () {
+                hamburger.classList.remove('active');
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (navLinks.classList.contains('active') &&
+                !navLinks.contains(e.target) &&
+                !hamburger.contains(e.target)) {
+                hamburger.classList.remove('active');
+                navLinks.classList.remove('active');
+            }
+        });
+    }
+});
 
 // Solar Calculator
 let selectedSystem = 6.6;
