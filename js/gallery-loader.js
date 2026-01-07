@@ -67,16 +67,16 @@ function renderGallery(projects) {
 
         // Create Card HTML
         const card = document.createElement('div');
-        card.className = 'gallery-card';
+        card.className = 'gallery-item'; // Fixed: Match CSS class
         card.setAttribute('data-category', project.category);
         // Store images for lightbox
         card.setAttribute('data-images', JSON.stringify(imageUrls));
 
         card.innerHTML = `
-            <div class="gallery-image">
+            <div class="gallery-image" onclick="openSupabaseLightbox(${index})" style="cursor: pointer;">
                 <img src="${coverImage}" alt="${project.title}" loading="lazy">
                 <div class="gallery-overlay">
-                    <button class="view-btn" onclick="openSupabaseLightbox(${index})">
+                    <button class="view-btn">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
@@ -88,10 +88,9 @@ function renderGallery(projects) {
                 </div>
             </div>
             <div class="gallery-info">
-                <h3>${project.title}</h3>
-                <p class="project-specs">${project.specs}</p>
-                <p class="project-location">📍 ${project.location}</p>
-                <p class="project-description">${project.description}</p>
+                <h3 class="gallery-title">${project.title}</h3>
+                <p class="gallery-specs">${project.specs}</p>
+                <p class="gallery-meta">📍 ${project.location}</p>
             </div>
         `;
 
