@@ -1411,3 +1411,39 @@
         .hidden {
             display: none !important;
         }
+
+        /* Calculator Layout Updates (Balance Fix) */
+        .calculator-content {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            gap: 3rem;
+            grid-template-columns: none !important;
+        }
+
+        .calculator-input-group,
+        .calculator-results {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .input-block label {
+            text-align: center;
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--navy-700);
+        }
+
+        .system-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            /* Try 4 in a row? Or 2x2. User asked for balance. */
+            gap: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .system-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
