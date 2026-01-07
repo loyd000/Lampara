@@ -2,8 +2,6 @@ backend:
   name: github
   repo: loyd000/Lampara
   branch: main
-  base_url: https://lampara-rho.vercel.app
-  auth_endpoint: oauth/authorize
 
 media_folder: "assets/gallery"
 public_folder: "/assets/gallery"
