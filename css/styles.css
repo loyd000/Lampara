@@ -2306,6 +2306,7 @@
             }
 
             .menu-toggle {
+                display: flex;
                 z-index: 100;
                 /* Ensure button is above menu */
             }
