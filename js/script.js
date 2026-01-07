@@ -59,12 +59,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (billInput && billRange) {
         billInput.addEventListener('input', function () {
             billRange.value = this.value;
-            calculateSavings();
+            recommendSystem(this.value);
         });
 
         billRange.addEventListener('input', function () {
             billInput.value = this.value;
-            calculateSavings();
+            recommendSystem(this.value);
         });
     }
 
@@ -74,6 +74,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     calculateSavings();
 });
+
+function recommendSystem(billAmount) {
+    let recommendedSize = 6.6; // Default fallback
+
+    // Recommendation Logic (Thresholds)
+    if (billAmount < 6000) {
+        recommendedSize = 3.3;
+    } else if (billAmount < 12000) {
+        recommendedSize = 6.6;
+    } else if (billAmount < 18000) {
+        recommendedSize = 8.3;
+    } else {
+        recommendedSize = 12.2;
+    }
+
+    // Only update if it's different to avoid jitter or unnecessary updates
+    if (recommendedSize !== selectedSystem) {
+        // Find the button and simulate click or call selectSystem
+        // We pass 'null' as event because we handle UI updates manually if needed
+        // But selectSystem expects event to find target classList. 
+        // Let's manually handle the UI update here to be safe.
+
+        selectedSystem = recommendedSize;
+
+        // Update UI Buttons
+        document.querySelectorAll('.system-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (parseFloat(btn.dataset.size) === recommendedSize) {
+                btn.classList.add('active');
+            }
+        });
+
+        calculateSavings();
+    }
+}
 
 // Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {

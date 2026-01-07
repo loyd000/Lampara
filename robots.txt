@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lampara-rho.vercel.app/sitemap.xml
