@@ -1406,3 +1406,8 @@
                 right: 20px;
             }
         }
+
+        /* Utility Class */
+        .hidden {
+            display: none !important;
+        }
