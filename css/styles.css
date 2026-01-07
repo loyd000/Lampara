@@ -2250,7 +2250,8 @@
             #nav-menu {
                 position: fixed;
                 top: 0;
-                right: -100%;
+                right: 0;
+                /* Align to right but use transform */
                 width: 100%;
                 height: 100vh;
                 background: rgba(15, 23, 42, 0.98);
@@ -2259,12 +2260,17 @@
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                transition: right 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+                transform: translateX(100%);
+                /* Move off-screen */
+                visibility: hidden;
+                /* Ensure it doesn't block clicks */
+                transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1), visibility 0.4s;
                 z-index: 99;
             }
 
             #nav-menu.active {
-                right: 0;
+                transform: translateX(0);
+                visibility: visible;
             }
 
             #nav-menu li {
