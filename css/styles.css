@@ -2325,3 +2325,40 @@
                 background-color: var(--white);
             }
         }
+
+        /* ==========================================================================
+   Final Tweaks: Logo Text
+   ========================================================================== */
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--navy-900);
+            letter-spacing: -0.5px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .footer-logo img {
+            margin-bottom: 0;
+            /* Reset margin */
+        }
+
+        .footer-logo span {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: -0.5px;
+        }
