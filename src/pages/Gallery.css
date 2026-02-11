@@ -1,0 +1,205 @@
+/* ========================================
+   Gallery Page — Mobile-First
+   ======================================== */
+
+/* --- Hero --- */
+.gallery-hero {
+    background: var(--navy);
+    padding: calc(var(--nav-height) + var(--sp-12)) 0 var(--sp-12);
+    text-align: center;
+}
+
+.gallery-hero .badge {
+    margin-bottom: var(--sp-4);
+}
+
+.gallery-hero h1 {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: var(--sp-3);
+}
+
+.gallery-hero p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+    .gallery-hero {
+        padding: calc(var(--nav-height) + var(--sp-16)) 0 var(--sp-16);
+    }
+
+    .gallery-hero h1 {
+        font-size: 2.5rem;
+    }
+}
+
+/* --- Filters --- */
+.gallery-filters {
+    display: flex;
+    gap: var(--sp-2);
+    overflow-x: auto;
+    padding-bottom: var(--sp-2);
+    margin-bottom: var(--sp-8);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.gallery-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.gallery-filter {
+    padding: var(--sp-2) var(--sp-4);
+    min-height: 44px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    white-space: nowrap;
+    transition: all var(--duration) var(--ease);
+    flex-shrink: 0;
+}
+
+.gallery-filter:hover {
+    border-color: var(--navy);
+    color: var(--navy);
+}
+
+.gallery-filter--active {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+}
+
+/* --- Grid --- */
+.gallery-grid {
+    display: grid;
+    gap: var(--sp-5);
+}
+
+.gallery-skeleton {
+    min-height: 320px;
+}
+
+.gallery-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--sp-16) 0;
+    color: var(--text-muted);
+}
+
+/* --- Card --- */
+.gallery-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--duration) var(--ease);
+}
+
+.gallery-card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--border);
+}
+
+.gallery-card__img {
+    position: relative;
+    height: 220px;
+    overflow: hidden;
+}
+
+.gallery-card__img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s var(--ease);
+}
+
+.gallery-card:hover .gallery-card__img img {
+    transform: scale(1.04);
+}
+
+.gallery-card__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(transparent 50%, rgba(10, 22, 40, 0.6));
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: var(--sp-3);
+    opacity: 0;
+    transition: opacity var(--duration) var(--ease);
+}
+
+.gallery-card:hover .gallery-card__overlay {
+    opacity: 1;
+}
+
+.gallery-card__count {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #fff;
+    background: rgba(10, 22, 40, 0.5);
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-full);
+    backdrop-filter: blur(4px);
+}
+
+.gallery-card__info {
+    padding: var(--sp-4) var(--sp-5);
+}
+
+.gallery-card__info h3 {
+    font-size: 1rem;
+    margin-bottom: var(--sp-1);
+}
+
+.gallery-card__specs {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.gallery-card__location {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-top: var(--sp-1);
+}
+
+@media (min-width: 640px) {
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* --- CTA --- */
+.gallery-cta {
+    text-align: center;
+    margin-top: var(--sp-12);
+    padding: var(--sp-8) var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.gallery-cta strong {
+    font-size: 1.0625rem;
+    color: var(--navy);
+}
+
+.gallery-cta p {
+    font-size: 0.9375rem;
+    max-width: 480px;
+}
