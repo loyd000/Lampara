@@ -4,6 +4,7 @@ import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import Gallery from './pages/Gallery.jsx';
 import Admin from './pages/Admin.jsx';
+import Attendance from './pages/Attendance.jsx';
 
 export default function App() {
     return (
@@ -30,6 +31,7 @@ export default function App() {
                     }
                 />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/attendance" element={<Attendance />} />
             </Routes>
         </>
     );

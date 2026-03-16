@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
+import AttendanceTab from './AdminAttendance.jsx';
 import './Admin.css';
 
 export default function Admin() {
@@ -94,6 +95,7 @@ function Login() {
    DASHBOARD
    ============================ */
 function Dashboard({ user }) {
+    const [tab, setTab] = useState('gallery');
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(false);
@@ -154,7 +156,7 @@ function Dashboard({ user }) {
                 <div className="container admin-header__inner">
                     <h1>
                         <img src="/assets/logo.png" alt="" style={{ width: 24, height: 24, display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />
-                        Gallery Manager
+                        Admin Panel
                     </h1>
                     <div className="admin-header__actions">
                         <span className="admin-header__email">{user.email}</span>
@@ -164,49 +166,64 @@ function Dashboard({ user }) {
             </header>
 
             <main className="container admin-main">
-                <div className="admin-toolbar">
-                    <h2>Projects ({projects.length})</h2>
-                    <button className="btn btn-primary" onClick={openNew}>+ Add Project</button>
+                <div className="admin-tabs">
+                    <button className={`admin-tab ${tab === 'gallery' ? 'active' : ''}`} onClick={() => setTab('gallery')}>
+                        Gallery
+                    </button>
+                    <button className={`admin-tab ${tab === 'attendance' ? 'active' : ''}`} onClick={() => setTab('attendance')}>
+                        Attendance
+                    </button>
                 </div>
 
-                {loading ? (
-                    <div className="admin-loading-inline"><div className="spinner" /></div>
-                ) : projects.length === 0 ? (
-                    <p className="admin-empty">No projects yet. Add your first one!</p>
-                ) : (
-                    <div className="admin-projects">
-                        {projects.map((project) => {
-                            const photos = project.project_photos || [];
-                            const coverPath = photos[0]?.storage_path;
-                            const coverUrl = coverPath
-                                ? supabase.storage.from('project-images').getPublicUrl(coverPath).data.publicUrl + '?width=200&resize=cover'
-                                : null;
+                {tab === 'gallery' && (
+                    <>
+                        <div className="admin-toolbar">
+                            <h2>Projects ({projects.length})</h2>
+                            <button className="btn btn-primary" onClick={openNew}>+ Add Project</button>
+                        </div>
 
-                            return (
-                                <div key={project.id} className="admin-project-card">
-                                    <div className="admin-project-card__img">
-                                        {coverUrl ? (
-                                            <img src={coverUrl} alt={project.title} />
-                                        ) : (
-                                            <div className="admin-project-card__placeholder">No Image</div>
-                                        )}
-                                    </div>
-                                    <div className="admin-project-card__info">
-                                        <h3>{project.title}</h3>
-                                        <p>{project.specs}</p>
-                                        <p className="admin-project-card__meta">
-                                            {project.location} · {project.category} · {photos.length} photos
-                                        </p>
-                                    </div>
-                                    <div className="admin-project-card__actions">
-                                        <button className="btn btn-outline" onClick={() => openEdit(project)}>Edit</button>
-                                        <button className="btn btn-outline" style={{ color: 'var(--error)', borderColor: 'var(--error)' }} onClick={() => handleDelete(project.id)}>Delete</button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                        {loading ? (
+                            <div className="admin-loading-inline"><div className="spinner" /></div>
+                        ) : projects.length === 0 ? (
+                            <p className="admin-empty">No projects yet. Add your first one!</p>
+                        ) : (
+                            <div className="admin-projects">
+                                {projects.map((project) => {
+                                    const photos = project.project_photos || [];
+                                    const coverPath = photos[0]?.storage_path;
+                                    const coverUrl = coverPath
+                                        ? supabase.storage.from('project-images').getPublicUrl(coverPath).data.publicUrl + '?width=200&resize=cover'
+                                        : null;
+
+                                    return (
+                                        <div key={project.id} className="admin-project-card">
+                                            <div className="admin-project-card__img">
+                                                {coverUrl ? (
+                                                    <img src={coverUrl} alt={project.title} />
+                                                ) : (
+                                                    <div className="admin-project-card__placeholder">No Image</div>
+                                                )}
+                                            </div>
+                                            <div className="admin-project-card__info">
+                                                <h3>{project.title}</h3>
+                                                <p>{project.specs}</p>
+                                                <p className="admin-project-card__meta">
+                                                    {project.location} · {project.category} · {photos.length} photos
+                                                </p>
+                                            </div>
+                                            <div className="admin-project-card__actions">
+                                                <button className="btn btn-outline" onClick={() => openEdit(project)}>Edit</button>
+                                                <button className="btn btn-outline" style={{ color: 'var(--error)', borderColor: 'var(--error)' }} onClick={() => handleDelete(project.id)}>Delete</button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </>
                 )}
+
+                {tab === 'attendance' && <AttendanceTab />}
             </main>
 
             {modal && (

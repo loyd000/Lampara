@@ -393,3 +393,389 @@
     align-items: center;
     justify-content: center;
 }
+
+/* --- Tabs --- */
+.admin-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border-light);
+    margin-bottom: var(--sp-6);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-tab {
+    padding: var(--sp-3) var(--sp-5);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    transition: all var(--duration) var(--ease);
+    background: none;
+    cursor: pointer;
+}
+
+.admin-tab:hover {
+    color: var(--text);
+}
+
+.admin-tab.active {
+    color: var(--navy);
+    border-bottom-color: var(--navy);
+    font-weight: 600;
+}
+
+/* --- Workers list --- */
+.admin-workers {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.admin-worker-card {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+}
+
+.admin-worker-card__avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.admin-worker-card__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-worker-card__info h3 {
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-worker-card__info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.admin-worker-card__actions {
+    flex-shrink: 0;
+}
+
+/* --- Register worker camera --- */
+.reg-camera-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--sp-3);
+}
+
+.reg-camera-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
+
+.reg-camera-wrap canvas {
+    position: absolute;
+    inset: 0;
+    transform: scaleX(-1);
+}
+
+.reg-capture-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.reg-capture-frame {
+    width: 160px;
+    height: 160px;
+    position: relative;
+}
+
+.reg-capture-frame::before,
+.reg-capture-frame::after,
+.reg-capture-frame span::before,
+.reg-capture-frame span::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: var(--gold);
+    border-style: solid;
+    border-width: 0;
+}
+
+.reg-capture-frame::before { top:0;left:0;border-top-width:3px;border-left-width:3px;border-top-left-radius:4px; }
+.reg-capture-frame::after { top:0;right:0;border-top-width:3px;border-right-width:3px;border-top-right-radius:4px; }
+.reg-capture-frame span::before { bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;border-bottom-left-radius:4px; }
+.reg-capture-frame span::after { bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;border-bottom-right-radius:4px; }
+
+.reg-status {
+    font-size: 0.78rem;
+    text-align: center;
+    margin-bottom: var(--sp-3);
+    min-height: 1.2em;
+}
+
+.reg-status--ok { color: var(--success); }
+.reg-status--warn { color: var(--gold); }
+.reg-status--err { color: var(--error); }
+
+/* --- Attendance Logs --- */
+.att-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+}
+
+.att-filters select,
+.att-filters input[type="date"] {
+    padding: var(--sp-2) var(--sp-3);
+    font-size: 0.875rem;
+    font-family: var(--font);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    min-height: 40px;
+    flex: 1;
+    min-width: 130px;
+}
+
+.att-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.att-log-table th {
+    text-align: left;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-light);
+    white-space: nowrap;
+}
+
+.att-log-table td {
+    padding: var(--sp-3);
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+
+.att-log-table tr:last-child td {
+    border-bottom: none;
+}
+
+.att-log-table tr:hover td {
+    background: var(--surface-alt);
+}
+
+.badge-in {
+    background: rgba(16,185,129,0.1);
+    color: var(--success);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.badge-out {
+    background: rgba(239,68,68,0.08);
+    color: var(--error);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.att-table-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+}
+
+/* --- DTR --- */
+.dtr-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-6);
+    align-items: flex-end;
+}
+
+.dtr-controls select {
+    padding: var(--sp-2) var(--sp-3);
+    font-size: 0.875rem;
+    font-family: var(--font);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    min-height: 40px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.dtr-table-wrap {
+    overflow-x: auto;
+    margin-bottom: var(--sp-5);
+}
+
+.dtr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    min-width: 500px;
+}
+
+.dtr-table th {
+    padding: var(--sp-3);
+    background: var(--navy);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.dtr-table td {
+    padding: var(--sp-3);
+    text-align: center;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.dtr-table tr:nth-child(even) td {
+    background: var(--surface-alt);
+}
+
+.dtr-table tr.dtr-sunday td {
+    background: rgba(239,68,68,0.04);
+    color: var(--error);
+}
+
+.dtr-table tr.dtr-absent td {
+    color: var(--text-muted);
+}
+
+.dtr-table tfoot td {
+    font-weight: 700;
+    color: var(--navy);
+    border-top: 2px solid var(--navy);
+    background: var(--surface);
+}
+
+.dtr-header {
+    text-align: center;
+    margin-bottom: var(--sp-6);
+    padding: var(--sp-5);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+}
+
+.dtr-header h3 {
+    font-size: 1rem;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--sp-1);
+}
+
+.dtr-header p {
+    font-size: 0.8125rem;
+}
+
+.dtr-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-5);
+}
+
+.dtr-summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-4);
+    text-align: center;
+}
+
+.dtr-summary-card__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.dtr-summary-card__label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+@media print {
+    .admin-header,
+    .admin-tabs,
+    .dtr-controls,
+    .no-print {
+        display: none !important;
+    }
+
+    .admin-main {
+        padding: 0;
+    }
+
+    body {
+        background: #fff;
+    }
+}
+
+@media (min-width: 640px) {
+    .admin-main {
+        padding: var(--sp-8);
+    }
+}

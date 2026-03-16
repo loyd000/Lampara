@@ -9,10 +9,11 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@supabase/supabase-js": "^2.47.0",
+        "@vladmandic/face-api": "^1.7.15",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
-        "react-router-dom": "^7.1.0",
-        "@supabase/supabase-js": "^2.47.0"
+        "react-router-dom": "^7.1.0"
     },
     "devDependencies": {
         "@vitejs/plugin-react": "^4.3.0",

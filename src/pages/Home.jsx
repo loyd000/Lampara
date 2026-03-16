@@ -25,8 +25,55 @@ export default function Home() {
    HERO
    ============================ */
 function Hero() {
+    const [bgImages, setBgImages] = useState([]);
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    // Fetch installation photos for the background slideshow
+    useEffect(() => {
+        async function loadBgImages() {
+            try {
+                const { data, error } = await supabase
+                    .from('project_photos')
+                    .select('storage_path')
+                    .limit(6);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    const urls = data.map((photo) =>
+                        supabase.storage
+                            .from('project-images')
+                            .getPublicUrl(photo.storage_path).data.publicUrl + '?width=1920&resize=cover'
+                    );
+                    setBgImages(urls);
+                }
+            } catch (err) {
+                console.error('Error loading hero bg images:', err);
+            }
+        }
+        loadBgImages();
+    }, []);
+
+    // Rotate through images every 5 seconds
+    useEffect(() => {
+        if (bgImages.length <= 1) return;
+        const timer = setInterval(() => {
+            setActiveIndex((prev) => (prev + 1) % bgImages.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, [bgImages]);
+
     return (
         <section id="home" className="hero">
+            {/* Background slideshow */}
+            <div className="hero__slideshow" aria-hidden="true">
+                {bgImages.map((url, i) => (
+                    <div
+                        key={url}
+                        className={`hero__slide ${i === activeIndex ? 'hero__slide--active' : ''}`}
+                        style={{ backgroundImage: `url(${url})` }}
+                    />
+                ))}
+            </div>
             <div className="hero__overlay" />
             <div className="container hero__content">
                 <div className="hero__badge badge badge-gold">Trusted Solar Partner</div>
