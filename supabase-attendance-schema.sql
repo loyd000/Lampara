@@ -88,15 +88,31 @@ RETURNS TABLE(
     employee_id text,
     "position" text,
     face_descriptor float8[],
+    face_descriptor_mobile float8[],
     status text
 )
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
     RETURN QUERY
-        SELECT w.id, w.name, w.employee_id, w.position, w.face_descriptor, w.status
+        SELECT w.id, w.name, w.employee_id, w.position,
+               w.face_descriptor, w.face_descriptor_mobile, w.status
         FROM workers w
         WHERE w.email = lower(trim(p_email))
           AND w.password_hash = p_password_hash;
+END;
+$$;
+
+-- ============================================================
+-- Mobile face descriptor (Flutter app uses a separate column
+-- since it uses a different TFLite model than the web face-api.js)
+-- ============================================================
+ALTER TABLE workers ADD COLUMN IF NOT EXISTS face_descriptor_mobile float8[];
+
+-- Allow active workers to update their own mobile face descriptor via RPC
+CREATE OR REPLACE FUNCTION save_mobile_face(p_worker_id uuid, p_descriptor float8[])
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    UPDATE workers SET face_descriptor_mobile = p_descriptor WHERE id = p_worker_id;
 END;
 $$;
 

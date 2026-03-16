@@ -36,7 +36,7 @@ export default function Attendance() {
         async function loadModels() {
             try {
                 await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
                     faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
                 ]);
@@ -609,12 +609,12 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             const video = videoRef.current;
 
             if (document.hidden || video.paused || video.readyState < 2) {
-                intervalRef.current = setTimeout(detect, 300);
+                intervalRef.current = setTimeout(detect, 500);
                 return;
             }
 
             const detection = await faceapi
-                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
@@ -631,7 +631,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             if (!detection) {
                 setStatus('scanning');
                 setStatusMsg('Position your face in the frame');
-                intervalRef.current = setTimeout(detect, 300);
+                intervalRef.current = setTimeout(detect, 500);
                 return;
             }
 
@@ -639,13 +639,13 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             setStatusMsg('Verifying identity…');
 
             const distance = faceapi.euclideanDistance(detection.descriptor, targetDescriptor);
-            if (distance > 0.55) {
+            if (distance > 0.6) {
                 setStatus('nomatch');
                 setStatusMsg('Face does not match. Try again.');
                 intervalRef.current = setTimeout(() => {
                     setStatus('scanning');
                     setStatusMsg('Position your face in the frame');
-                    intervalRef.current = setTimeout(detect, 300);
+                    intervalRef.current = setTimeout(detect, 500);
                 }, 2000);
                 return;
             }
@@ -658,7 +658,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             setTimeout(onVerified, 700);
         };
 
-        intervalRef.current = setTimeout(detect, 300);
+        intervalRef.current = setTimeout(detect, 500);
     };
 
     const statusClass = {
