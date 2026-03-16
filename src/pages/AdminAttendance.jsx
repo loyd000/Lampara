@@ -2,6 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import * as faceapi from '@vladmandic/face-api';
 import { supabase } from '../lib/supabase.js';
 
+function downloadCSV(filename, headers, rows) {
+    const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+}
+
 async function hashPassword(password) {
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
@@ -497,13 +507,34 @@ function LogsTab() {
         return dt.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const exportCSV = () => {
+        const headers = ['Worker', 'Employee ID', 'Date', 'Time', 'Action'];
+        const fmtTimeExport = (ts) => new Date(ts).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const fmtDateExport = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+        const rows = logs.map(l => [
+            l.workers?.name || '',
+            l.workers?.employee_id || '',
+            fmtDateExport(l.date),
+            fmtTimeExport(l.logged_at),
+            l.action === 'time_in' ? 'Time In' : 'Time Out',
+        ]);
+        downloadCSV(`attendance-logs-${new Date().toISOString().slice(0,10)}.csv`, headers, rows);
+    };
+
     return (
         <div>
             <div className="admin-toolbar" style={{ marginBottom: 'var(--sp-4)' }}>
                 <h2>Attendance Logs</h2>
-                <button className="btn btn-outline" style={{ fontSize: '0.8125rem', minHeight: 36, padding: '6px 14px' }} onClick={loadLogs}>
-                    Refresh
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                    {logs.length > 0 && (
+                        <button className="btn btn-outline" style={{ fontSize: '0.8125rem', minHeight: 36, padding: '6px 14px' }} onClick={exportCSV}>
+                            Export CSV
+                        </button>
+                    )}
+                    <button className="btn btn-outline" style={{ fontSize: '0.8125rem', minHeight: 36, padding: '6px 14px' }} onClick={loadLogs}>
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             <div className="att-filters">
@@ -674,13 +705,37 @@ function DTRTab() {
                     {loading ? 'Loading…' : 'Generate DTR'}
                 </button>
                 {dtrData && (
-                    <button
-                        className="btn btn-outline"
-                        style={{ fontSize: '0.875rem', flex: '0 0 auto' }}
-                        onClick={() => window.print()}
-                    >
-                        Print / PDF
-                    </button>
+                    <>
+                        <button
+                            className="btn btn-outline"
+                            style={{ fontSize: '0.875rem', flex: '0 0 auto' }}
+                            onClick={() => {
+                                const headers = ['Day', 'Date', 'Time In', 'Time Out', 'Hours', 'Remarks'];
+                                const fmtT = (ts) => ts ? new Date(ts).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                                const rows = dtrData.map(r => {
+                                    const isSunday = r.dayName === 'Sun';
+                                    const isAbsent = !r.timeIn && !isSunday;
+                                    return [
+                                        r.dayName, r.day,
+                                        fmtT(r.timeIn?.logged_at), fmtT(r.timeOut?.logged_at),
+                                        r.hours ?? '',
+                                        isSunday ? 'Rest Day' : isAbsent ? 'Absent' : r.timeIn && !r.timeOut ? 'No time-out' : '',
+                                    ];
+                                });
+                                rows.push(['', '', '', 'Total Hours', totalHours, '']);
+                                downloadCSV(`DTR-${workerInfo.name.replace(/ /g,'-')}-${selectedMonth}.csv`, headers, rows);
+                            }}
+                        >
+                            Export CSV
+                        </button>
+                        <button
+                            className="btn btn-outline"
+                            style={{ fontSize: '0.875rem', flex: '0 0 auto' }}
+                            onClick={() => window.print()}
+                        >
+                            Print / PDF
+                        </button>
+                    </>
                 )}
             </div>
 

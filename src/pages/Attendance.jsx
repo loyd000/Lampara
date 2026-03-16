@@ -88,6 +88,18 @@ export default function Attendance() {
         setSuccessData(null);
     };
 
+    const handleDone = async () => {
+        const { data } = await supabase
+            .from('attendance_logs')
+            .select('action, logged_at')
+            .eq('worker_id', currentWorker.id)
+            .order('logged_at', { ascending: false })
+            .limit(1);
+        setLastAction(data?.[0] || null);
+        setSuccessData(null);
+        setScreen('welcome');
+    };
+
     const formatTime = (d) =>
         d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
@@ -169,7 +181,7 @@ export default function Attendance() {
                 {screen === 'success' && successData && (
                     <SuccessScreen
                         data={successData}
-                        onDone={logout}
+                        onDone={handleDone}
                         formatTime={formatTime}
                     />
                 )}
@@ -568,9 +580,20 @@ function CameraScreen({ worker, onVerified, onCancel }) {
         });
         return () => {
             mounted = false;
-            clearInterval(intervalRef.current);
+            clearTimeout(intervalRef.current);
             streamRef.current?.getTracks().forEach(t => t.stop());
         };
+    }, []);
+
+    // Resume detection when user returns to this tab
+    useEffect(() => {
+        const onVisible = () => {
+            if (document.hidden || verifiedRef.current) return;
+            const video = videoRef.current;
+            if (video && video.paused) video.play().catch(() => {});
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
     }, []);
 
     const startDetection = () => {
@@ -581,15 +604,21 @@ function CameraScreen({ worker, onVerified, onCancel }) {
         }
         const targetDescriptor = new Float32Array(worker.face_descriptor);
 
-        intervalRef.current = setInterval(async () => {
-            if (!videoRef.current || verifiedRef.current) return;
+        const detect = async () => {
+            if (verifiedRef.current || !videoRef.current) return;
             const video = videoRef.current;
-            if (video.readyState < 2) return;
+
+            if (document.hidden || video.paused || video.readyState < 2) {
+                intervalRef.current = setTimeout(detect, 300);
+                return;
+            }
 
             const detection = await faceapi
                 .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
                 .withFaceLandmarks()
                 .withFaceDescriptor();
+
+            if (verifiedRef.current) return;
 
             if (canvasRef.current) {
                 const displaySize = { width: video.videoWidth, height: video.videoHeight };
@@ -602,6 +631,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             if (!detection) {
                 setStatus('scanning');
                 setStatusMsg('Position your face in the frame');
+                intervalRef.current = setTimeout(detect, 300);
                 return;
             }
 
@@ -612,20 +642,23 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             if (distance > 0.55) {
                 setStatus('nomatch');
                 setStatusMsg('Face does not match. Try again.');
-                setTimeout(() => {
+                intervalRef.current = setTimeout(() => {
                     setStatus('scanning');
                     setStatusMsg('Position your face in the frame');
+                    intervalRef.current = setTimeout(detect, 300);
                 }, 2000);
                 return;
             }
 
             verifiedRef.current = true;
-            clearInterval(intervalRef.current);
+            clearTimeout(intervalRef.current);
             streamRef.current?.getTracks().forEach(t => t.stop());
             setStatus('matched');
             setStatusMsg('Identity verified!');
             setTimeout(onVerified, 700);
-        }, 500);
+        };
+
+        intervalRef.current = setTimeout(detect, 300);
     };
 
     const statusClass = {
