@@ -302,20 +302,26 @@ function RegisterScreen({ modelsLoaded, onBack, onSubmitted }) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             streamRef.current = stream;
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                videoRef.current.onloadedmetadata = () => {
-                    videoRef.current.play();
-                    setCameraActive(true);
-                    setCaptureStatus('Look straight at the camera, then click Capture');
-                    startLoop();
-                };
-            }
+            setCameraActive(true); // mount the <video> element first
         } catch {
             setCaptureStatus('Camera access denied.');
             setCaptureStatusType('err');
         }
     };
+
+    // After cameraActive=true the <video> element is in the DOM — now attach stream
+    useEffect(() => {
+        if (!cameraActive || !streamRef.current || !videoRef.current) return;
+        const video = videoRef.current;
+        video.srcObject = streamRef.current;
+        const setup = () => {
+            video.play().catch(() => {});
+            setCaptureStatus('Look straight at the camera, then click Capture');
+            startLoop();
+        };
+        if (video.readyState >= 1) setup();
+        else video.onloadedmetadata = setup;
+    }, [cameraActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startLoop = () => {
         detectionRef.current = setInterval(async () => {
