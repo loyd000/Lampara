@@ -6,14 +6,23 @@ import './Attendance.css';
 
 const MODEL_URL = '/models';
 
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 /* ============================================================
-   Root — loads models, manages screen state
+   Root
+   screens: login | register | pending | rejected | welcome |
+            camera | confirm | success
    ============================================================ */
 export default function Attendance() {
     const [modelsLoaded, setModelsLoaded] = useState(false);
     const [modelError, setModelError] = useState('');
-    const [screen, setScreen] = useState('welcome'); // welcome | camera | confirm | success
-    const [matchedWorker, setMatchedWorker] = useState(null);
+    const [screen, setScreen] = useState('login');
+    const [currentWorker, setCurrentWorker] = useState(null);
     const [lastAction, setLastAction] = useState(null);
     const [successData, setSuccessData] = useState(null);
     const [liveTime, setLiveTime] = useState(new Date());
@@ -39,34 +48,42 @@ export default function Attendance() {
         loadModels();
     }, []);
 
-    const handleFaceMatch = useCallback(async (worker) => {
+    const handleLogin = async (worker) => {
+        if (worker.__statusRedirect) {
+            setScreen(worker.__statusRedirect);
+            return;
+        }
         const { data } = await supabase
             .from('attendance_logs')
             .select('action, logged_at')
             .eq('worker_id', worker.id)
             .order('logged_at', { ascending: false })
             .limit(1);
-        setMatchedWorker(worker);
+        setCurrentWorker(worker);
         setLastAction(data?.[0] || null);
+        setScreen('welcome');
+    };
+
+    const handleFaceVerified = useCallback(() => {
         setScreen('confirm');
     }, []);
 
     const handleRecord = async (action) => {
         const { error } = await supabase.from('attendance_logs').insert({
-            worker_id: matchedWorker.id,
+            worker_id: currentWorker.id,
             action,
             logged_at: new Date().toISOString(),
             date: new Date().toISOString().split('T')[0],
         });
         if (!error) {
-            setSuccessData({ worker: matchedWorker, action, time: new Date() });
+            setSuccessData({ worker: currentWorker, action, time: new Date() });
             setScreen('success');
         }
     };
 
-    const reset = () => {
-        setScreen('welcome');
-        setMatchedWorker(null);
+    const logout = () => {
+        setScreen('login');
+        setCurrentWorker(null);
         setLastAction(null);
         setSuccessData(null);
     };
@@ -88,35 +105,61 @@ export default function Attendance() {
             </header>
 
             <div className="att-card">
-                {!modelsLoaded && !modelError && (
-                    <div className="att-loading">
-                        <div className="att-loading__spinner" />
-                        <p>Loading face recognition models…</p>
-                    </div>
-                )}
+                {modelError && <div className="att-error-msg" style={{ marginBottom: 'var(--sp-4)' }}>{modelError}</div>}
 
-                {modelError && (
-                    <div className="att-error-msg">{modelError}</div>
-                )}
-
-                {modelsLoaded && screen === 'welcome' && (
-                    <WelcomeScreen
+                {screen === 'login' && (
+                    <LoginScreen
                         time={formatTime(liveTime)}
                         date={formatDate(liveTime)}
+                        onLogin={handleLogin}
+                        onRegister={() => setScreen('register')}
+                    />
+                )}
+
+                {screen === 'register' && (
+                    <RegisterScreen
+                        modelsLoaded={modelsLoaded}
+                        onBack={() => setScreen('login')}
+                        onSubmitted={() => setScreen('pending')}
+                    />
+                )}
+
+                {screen === 'pending' && (
+                    <StatusScreen
+                        type="pending"
+                        onBack={() => setScreen('login')}
+                    />
+                )}
+
+                {screen === 'rejected' && (
+                    <StatusScreen
+                        type="rejected"
+                        onBack={() => setScreen('login')}
+                    />
+                )}
+
+                {screen === 'welcome' && currentWorker && (
+                    <WelcomeScreen
+                        worker={currentWorker}
+                        time={formatTime(liveTime)}
+                        date={formatDate(liveTime)}
+                        modelsLoaded={modelsLoaded}
                         onStart={() => setScreen('camera')}
+                        onLogout={logout}
                     />
                 )}
 
-                {modelsLoaded && screen === 'camera' && (
+                {screen === 'camera' && currentWorker && modelsLoaded && (
                     <CameraScreen
-                        onMatch={handleFaceMatch}
-                        onCancel={reset}
+                        worker={currentWorker}
+                        onVerified={handleFaceVerified}
+                        onCancel={() => setScreen('welcome')}
                     />
                 )}
 
-                {screen === 'confirm' && matchedWorker && (
+                {screen === 'confirm' && currentWorker && (
                     <ConfirmScreen
-                        worker={matchedWorker}
+                        worker={currentWorker}
                         lastAction={lastAction}
                         onRecord={handleRecord}
                         onRetry={() => setScreen('camera')}
@@ -126,7 +169,7 @@ export default function Attendance() {
                 {screen === 'success' && successData && (
                     <SuccessScreen
                         data={successData}
-                        onDone={reset}
+                        onDone={logout}
                         formatTime={formatTime}
                     />
                 )}
@@ -136,72 +179,387 @@ export default function Attendance() {
 }
 
 /* ============================================================
-   Welcome Screen
+   Login Screen
    ============================================================ */
-function WelcomeScreen({ time, date, onStart }) {
+function LoginScreen({ time, date, onLogin, onRegister }) {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            const hash = await hashPassword(password);
+            const { data, error: rpcError } = await supabase.rpc('worker_login', {
+                p_email: email.toLowerCase().trim(),
+                p_password_hash: hash,
+            });
+
+            if (rpcError) throw rpcError;
+
+            if (!data || data.length === 0) {
+                setError('Invalid email or password.');
+                setLoading(false);
+                return;
+            }
+
+            const worker = data[0];
+            if (worker.status === 'pending') {
+                setError('');
+                setLoading(false);
+                onLogin({ __statusRedirect: 'pending' });
+                return;
+            }
+            if (worker.status === 'rejected') {
+                setError('Your account has been rejected. Please contact admin.');
+                setLoading(false);
+                return;
+            }
+            onLogin(worker);
+        } catch (err) {
+            setError(err.message || 'Login failed.');
+        }
+        setLoading(false);
+    };
+
     return (
-        <div className="att-welcome">
-            <div className="att-welcome__time">{time}</div>
-            <div className="att-welcome__date">{date}</div>
-            <div className="att-welcome__icon">
+        <div className="att-auth">
+            <div className="att-auth__clock">
+                <div className="att-welcome__time">{time}</div>
+                <div className="att-welcome__date">{date}</div>
+            </div>
+
+            <div className="att-auth__icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
             </div>
-            <h2>Worker Time Tracker</h2>
-            <p>Look into the camera to identify yourself and record your attendance.</p>
-            <button className="att-btn-primary" onClick={onStart}>
-                Start Face Scan
+            <h2 style={{ color: '#fff', marginBottom: 'var(--sp-1)' }}>Worker Sign In</h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', marginBottom: 'var(--sp-6)' }}>Sign in to record your attendance</p>
+
+            <form onSubmit={handleSubmit} className="att-form">
+                <div className="att-field">
+                    <label>Email</label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        required
+                        placeholder="your@email.com"
+                        autoComplete="email"
+                    />
+                </div>
+                <div className="att-field">
+                    <label>Password</label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                    />
+                </div>
+                {error && <div className="att-error-msg">{error}</div>}
+                <button type="submit" className="att-btn-primary" disabled={loading}>
+                    {loading ? 'Signing in…' : 'Sign In'}
+                </button>
+            </form>
+
+            <div className="att-divider"><span>or</span></div>
+
+            <button className="att-btn-secondary" onClick={onRegister}>
+                Create an Account
             </button>
         </div>
     );
 }
 
 /* ============================================================
-   Camera Screen — detects & matches face
+   Register Screen
    ============================================================ */
-function CameraScreen({ onMatch, onCancel }) {
+function RegisterScreen({ modelsLoaded, onBack, onSubmitted }) {
+    const [form, setForm] = useState({ name: '', employee_id: '', position: '', email: '', password: '', confirmPassword: '' });
+    const [descriptor, setDescriptor] = useState(null);
+    const [error, setError] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [cameraActive, setCameraActive] = useState(false);
+    const [captureStatus, setCaptureStatus] = useState('');
+    const [captureStatusType, setCaptureStatusType] = useState('warn');
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
+    const detectionRef = useRef(null);
+
+    const startCamera = async () => {
+        setError('');
+        if (!modelsLoaded) { setError('Face recognition models are still loading. Please wait.'); return; }
+        setCaptureStatus('Starting camera…');
+        setCaptureStatusType('warn');
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.onloadedmetadata = () => {
+                    videoRef.current.play();
+                    setCameraActive(true);
+                    setCaptureStatus('Look straight at the camera, then click Capture');
+                    startLoop();
+                };
+            }
+        } catch {
+            setCaptureStatus('Camera access denied.');
+            setCaptureStatusType('err');
+        }
+    };
+
+    const startLoop = () => {
+        detectionRef.current = setInterval(async () => {
+            const video = videoRef.current;
+            if (!video || video.readyState < 2) return;
+            const det = await faceapi
+                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+            if (!canvasRef.current) return;
+            const displaySize = { width: video.videoWidth, height: video.videoHeight };
+            faceapi.matchDimensions(canvasRef.current, displaySize);
+            const ctx = canvasRef.current.getContext('2d');
+            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            if (det) {
+                faceapi.draw.drawDetections(canvasRef.current, [faceapi.resizeResults(det, displaySize)]);
+                setCaptureStatus('Face detected — click Capture');
+                setCaptureStatusType('ok');
+            } else {
+                setCaptureStatus('No face detected. Adjust your position.');
+                setCaptureStatusType('warn');
+            }
+        }, 500);
+    };
+
+    const capture = async () => {
+        const video = videoRef.current;
+        if (!video) return;
+        const det = await faceapi
+            .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+        if (!det) { setCaptureStatus('No face detected. Try again.'); setCaptureStatusType('err'); return; }
+        setDescriptor(Array.from(det.descriptor));
+        setCaptureStatus('Face captured!');
+        setCaptureStatusType('ok');
+        stopCamera();
+    };
+
+    const stopCamera = () => {
+        clearInterval(detectionRef.current);
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        setCameraActive(false);
+    };
+
+    useEffect(() => () => {
+        clearInterval(detectionRef.current);
+        streamRef.current?.getTracks().forEach(t => t.stop());
+    }, []);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
+        if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+        if (!descriptor) { setError('Please capture your face photo first.'); return; }
+        setSaving(true);
+        try {
+            const hash = await hashPassword(form.password);
+            const { error: err } = await supabase.from('workers').insert({
+                name: form.name.trim(),
+                employee_id: form.employee_id.trim(),
+                position: form.position.trim(),
+                email: form.email.toLowerCase().trim(),
+                password_hash: hash,
+                face_descriptor: descriptor,
+                status: 'pending',
+            });
+            if (err) throw err;
+            onSubmitted();
+        } catch (err) {
+            setError(err.message);
+        }
+        setSaving(false);
+    };
+
+    return (
+        <div className="att-auth">
+            <button className="att-back-btn" onClick={onBack}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Sign In
+            </button>
+
+            <h2 style={{ color: '#fff', marginBottom: 'var(--sp-1)', marginTop: 'var(--sp-3)' }}>Create Account</h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', marginBottom: 'var(--sp-6)' }}>Your account will need admin approval before you can sign in.</p>
+
+            <form onSubmit={handleSubmit} className="att-form">
+                <div className="att-field">
+                    <label>Full Name *</label>
+                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required placeholder="Juan dela Cruz" />
+                </div>
+                <div className="att-field">
+                    <label>Employee ID *</label>
+                    <input value={form.employee_id} onChange={e => setForm(f => ({ ...f, employee_id: e.target.value }))} required placeholder="EMP-001" />
+                </div>
+                <div className="att-field">
+                    <label>Position / Role</label>
+                    <input value={form.position} onChange={e => setForm(f => ({ ...f, position: e.target.value }))} placeholder="e.g. Solar Installer" />
+                </div>
+                <div className="att-field">
+                    <label>Email *</label>
+                    <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required placeholder="your@email.com" autoComplete="email" />
+                </div>
+                <div className="att-field">
+                    <label>Password *</label>
+                    <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required placeholder="At least 6 characters" autoComplete="new-password" />
+                </div>
+                <div className="att-field">
+                    <label>Confirm Password *</label>
+                    <input type="password" value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} required placeholder="Repeat password" autoComplete="new-password" />
+                </div>
+
+                <div className="att-field">
+                    <label>Face Photo {descriptor ? <span style={{ color: 'var(--success)', marginLeft: 6 }}>✓ Captured</span> : '(required) *'}</label>
+                    {cameraActive ? (
+                        <div>
+                            <div className="reg-camera-wrap" style={{ borderRadius: 'var(--radius-sm)', overflow: 'hidden', marginBottom: 'var(--sp-2)' }}>
+                                <video ref={videoRef} muted playsInline autoPlay style={{ width: '100%', display: 'block', transform: 'scaleX(-1)' }} />
+                                <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, transform: 'scaleX(-1)', width: '100%', height: '100%' }} />
+                                <div className="reg-capture-overlay"><div className="reg-capture-frame"><span /></div></div>
+                            </div>
+                            <p className={`reg-status reg-status--${captureStatusType}`}>{captureStatus}</p>
+                            <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
+                                <button type="button" className="att-btn-primary" style={{ flex: 1 }} onClick={capture}>Capture Face</button>
+                                <button type="button" className="att-btn-secondary" style={{ width: 'auto', flex: '0 0 auto', padding: '0 var(--sp-4)' }} onClick={stopCamera}>Cancel</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            {descriptor
+                                ? <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                                    <span style={{ color: 'var(--success)', fontSize: '0.875rem' }}>✓ Face captured</span>
+                                    <button type="button" className="att-btn-secondary" style={{ width: 'auto', padding: '6px 14px', fontSize: '0.8rem' }} onClick={startCamera}>Retake</button>
+                                  </div>
+                                : <button type="button" className="att-btn-secondary" onClick={startCamera}>Open Camera</button>
+                            }
+                            {captureStatus && !cameraActive && (
+                                <p className={`reg-status reg-status--${captureStatusType}`} style={{ marginTop: 'var(--sp-2)' }}>{captureStatus}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {error && <div className="att-error-msg">{error}</div>}
+
+                <button type="submit" className="att-btn-primary" disabled={saving || !descriptor}>
+                    {saving ? 'Submitting…' : 'Submit Registration'}
+                </button>
+            </form>
+        </div>
+    );
+}
+
+/* ============================================================
+   Status Screen — pending / rejected
+   ============================================================ */
+function StatusScreen({ type, onBack }) {
+    const isPending = type === 'pending';
+    return (
+        <div className="att-welcome" style={{ paddingTop: 'var(--sp-4)' }}>
+            <div className="att-welcome__icon" style={isPending
+                ? { background: 'rgba(201,168,76,0.1)', borderColor: 'rgba(201,168,76,0.3)' }
+                : { background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }
+            }>
+                {isPending ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--gold)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+                    </svg>
+                ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--error)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                )}
+            </div>
+            <h2 style={{ color: '#fff' }}>{isPending ? 'Awaiting Approval' : 'Account Rejected'}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.45)', marginBottom: 'var(--sp-8)' }}>
+                {isPending
+                    ? 'Your registration has been submitted. Please wait for the admin to approve your account before signing in.'
+                    : 'Your account registration was not approved. Please contact the administrator for assistance.'
+                }
+            </p>
+            <button className="att-btn-primary" onClick={onBack}>Back to Sign In</button>
+        </div>
+    );
+}
+
+/* ============================================================
+   Welcome Screen (post-login)
+   ============================================================ */
+function WelcomeScreen({ worker, time, date, modelsLoaded, onStart, onLogout }) {
+    const initials = worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return (
+        <div className="att-welcome">
+            <div className="att-welcome__time">{time}</div>
+            <div className="att-welcome__date">{date}</div>
+            <div className="att-confirm__avatar" style={{ margin: '0 auto var(--sp-4)' }}>{initials}</div>
+            <h2 style={{ color: '#fff', marginBottom: 'var(--sp-1)' }}>Hello, {worker.name.split(' ')[0]}!</h2>
+            <p style={{ marginBottom: 'var(--sp-8)' }}>{worker.position || 'Worker'} &nbsp;·&nbsp; ID: {worker.employee_id}</p>
+            {!modelsLoaded ? (
+                <div className="att-loading">
+                    <div className="att-loading__spinner" />
+                    <p>Loading face recognition…</p>
+                </div>
+            ) : (
+                <button className="att-btn-primary" onClick={onStart}>
+                    Start Face Scan
+                </button>
+            )}
+            <button className="att-btn-secondary" onClick={onLogout} style={{ marginTop: 'var(--sp-3)' }}>Sign Out</button>
+        </div>
+    );
+}
+
+/* ============================================================
+   Camera Screen — verifies the logged-in worker's face
+   ============================================================ */
+function CameraScreen({ worker, onVerified, onCancel }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
     const intervalRef = useRef(null);
-    const [status, setStatus] = useState('scanning'); // scanning | detected | matching | nomatch | error
+    const [status, setStatus] = useState('scanning');
     const [statusMsg, setStatusMsg] = useState('Position your face in the frame');
-    const [workers, setWorkers] = useState([]);
-    const matchAttemptedRef = useRef(false);
+    const verifiedRef = useRef(false);
 
     useEffect(() => {
         let mounted = true;
-
-        async function init() {
-            try {
-                const { data } = await supabase.from('workers').select('id, name, employee_id, position, face_descriptor');
-                if (mounted) setWorkers(data || []);
-            } catch { /* ignored */ }
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } }
-                });
-                if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
-                streamRef.current = stream;
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.onloadedmetadata = () => {
-                        videoRef.current.play();
-                        startDetection();
-                    };
-                }
-            } catch (err) {
-                if (mounted) {
-                    setStatus('error');
-                    setStatusMsg('Camera access denied. Please allow camera permission.');
-                }
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } }
+        }).then(stream => {
+            if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.onloadedmetadata = () => {
+                    videoRef.current.play();
+                    startDetection();
+                };
             }
-        }
-
-        init();
-
+        }).catch(() => {
+            if (mounted) { setStatus('error'); setStatusMsg('Camera access denied.'); }
+        });
         return () => {
             mounted = false;
             clearInterval(intervalRef.current);
@@ -210,8 +568,15 @@ function CameraScreen({ onMatch, onCancel }) {
     }, []);
 
     const startDetection = () => {
+        if (!worker.face_descriptor || worker.face_descriptor.length !== 128) {
+            setStatus('error');
+            setStatusMsg('No face data on file. Contact admin.');
+            return;
+        }
+        const targetDescriptor = new Float32Array(worker.face_descriptor);
+
         intervalRef.current = setInterval(async () => {
-            if (!videoRef.current || matchAttemptedRef.current) return;
+            if (!videoRef.current || verifiedRef.current) return;
             const video = videoRef.current;
             if (video.readyState < 2) return;
 
@@ -220,85 +585,46 @@ function CameraScreen({ onMatch, onCancel }) {
                 .withFaceLandmarks()
                 .withFaceDescriptor();
 
+            if (canvasRef.current) {
+                const displaySize = { width: video.videoWidth, height: video.videoHeight };
+                faceapi.matchDimensions(canvasRef.current, displaySize);
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                if (detection) faceapi.draw.drawDetections(canvasRef.current, [faceapi.resizeResults(detection, displaySize)]);
+            }
+
             if (!detection) {
                 setStatus('scanning');
                 setStatusMsg('Position your face in the frame');
-                drawFrame(null);
                 return;
             }
 
             setStatus('detected');
-            setStatusMsg('Face detected — matching…');
-            drawFrame(detection);
+            setStatusMsg('Verifying identity…');
 
-            // Match against workers
-            const currentWorkers = workers.length
-                ? workers
-                : (await supabase.from('workers').select('id, name, employee_id, position, face_descriptor').then(r => r.data || []));
-
-            if (currentWorkers.length === 0) {
+            const distance = faceapi.euclideanDistance(detection.descriptor, targetDescriptor);
+            if (distance > 0.55) {
                 setStatus('nomatch');
-                setStatusMsg('No registered workers found. Ask admin to register you first.');
-                return;
-            }
-
-            const labeledDescriptors = currentWorkers
-                .filter(w => w.face_descriptor && w.face_descriptor.length === 128)
-                .map(w => new faceapi.LabeledFaceDescriptors(
-                    w.id,
-                    [new Float32Array(w.face_descriptor)]
-                ));
-
-            if (labeledDescriptors.length === 0) {
-                setStatus('nomatch');
-                setStatusMsg('No face data registered yet. Ask admin to register you.');
-                return;
-            }
-
-            const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.55);
-            const best = matcher.findBestMatch(detection.descriptor);
-
-            if (best.label === 'unknown') {
-                setStatus('nomatch');
-                setStatusMsg('Face not recognized. Try again or contact admin.');
+                setStatusMsg('Face does not match. Try again.');
                 setTimeout(() => {
-                    matchAttemptedRef.current = false;
                     setStatus('scanning');
                     setStatusMsg('Position your face in the frame');
-                }, 2500);
+                }, 2000);
                 return;
             }
 
-            matchAttemptedRef.current = true;
+            verifiedRef.current = true;
             clearInterval(intervalRef.current);
             streamRef.current?.getTracks().forEach(t => t.stop());
-
-            const matched = currentWorkers.find(w => w.id === best.label);
             setStatus('matched');
-            setStatusMsg(`Matched: ${matched.name}`);
-            setTimeout(() => onMatch(matched), 600);
+            setStatusMsg('Identity verified!');
+            setTimeout(onVerified, 700);
         }, 500);
-    };
-
-    const drawFrame = (detection) => {
-        if (!canvasRef.current || !videoRef.current) return;
-        const canvas = canvasRef.current;
-        const video = videoRef.current;
-        const displaySize = { width: video.videoWidth, height: video.videoHeight };
-        faceapi.matchDimensions(canvas, displaySize);
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (detection) {
-            const resized = faceapi.resizeResults(detection, displaySize);
-            faceapi.draw.drawDetections(canvas, [resized]);
-        }
     };
 
     const statusClass = {
         scanning: 'att-camera__status--scanning',
         detected: 'att-camera__status--detected',
-        matching: 'att-camera__status--detected',
         matched: 'att-camera__status--matched',
         nomatch: 'att-camera__status--error',
         error: 'att-camera__status--error',
@@ -306,7 +632,7 @@ function CameraScreen({ onMatch, onCancel }) {
 
     return (
         <div className="att-camera">
-            <div className="att-camera__label">Face Recognition</div>
+            <div className="att-camera__label">Verifying Identity — {worker.name}</div>
             <div className={`att-camera__container ${status === 'scanning' ? 'scanning' : ''}`}>
                 <video ref={videoRef} className="att-camera__video" muted playsInline autoPlay />
                 <canvas ref={canvasRef} className="att-camera__canvas" />
@@ -317,9 +643,7 @@ function CameraScreen({ onMatch, onCancel }) {
             <p className={`att-camera__status ${statusClass}`}>
                 {statusMsg}
                 {status === 'scanning' && (
-                    <span className="att-dots">
-                        <span /><span /><span />
-                    </span>
+                    <span className="att-dots"><span /><span /><span /></span>
                 )}
             </p>
             <button className="att-btn-secondary" onClick={onCancel}>Cancel</button>
@@ -328,12 +652,11 @@ function CameraScreen({ onMatch, onCancel }) {
 }
 
 /* ============================================================
-   Confirm Screen — worker matched, choose action
+   Confirm Screen
    ============================================================ */
 function ConfirmScreen({ worker, lastAction, onRecord, onRetry }) {
     const [submitting, setSubmitting] = useState(false);
     const initials = worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
     const lastActionText = lastAction
         ? `Last: ${lastAction.action === 'time_in' ? 'Clocked In' : 'Clocked Out'} at ${new Date(lastAction.logged_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })}`
         : 'No previous record today';
@@ -351,24 +674,15 @@ function ConfirmScreen({ worker, lastAction, onRecord, onRetry }) {
             <div className="att-confirm__role">{worker.position || 'Worker'}</div>
             <div className="att-confirm__id">ID: {worker.employee_id}</div>
             <div className="att-confirm__last">{lastActionText}</div>
-
             <div className="att-confirm__actions">
-                <button
-                    className="att-btn-timein"
-                    onClick={() => handle('time_in')}
-                    disabled={submitting}
-                >
+                <button className="att-btn-timein" onClick={() => handle('time_in')} disabled={submitting}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0 0V8m0 4h4m-4 0H8M12 21a9 9 0 100-18 9 9 0 000 18z" />
                     </svg>
                     Time In
                     <span className="att-btn-sub">Clock In</span>
                 </button>
-                <button
-                    className="att-btn-timeout"
-                    onClick={() => handle('time_out')}
-                    disabled={submitting}
-                >
+                <button className="att-btn-timeout" onClick={() => handle('time_out')} disabled={submitting}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m0 0l3-3m-3 3l3 3M12 21a9 9 0 100-18 9 9 0 000 18z" />
                     </svg>
@@ -376,8 +690,7 @@ function ConfirmScreen({ worker, lastAction, onRecord, onRetry }) {
                     <span className="att-btn-sub">Clock Out</span>
                 </button>
             </div>
-
-            <button className="att-btn-secondary" onClick={onRetry}>Not me? Scan again</button>
+            <button className="att-btn-secondary" onClick={onRetry}>Re-scan face</button>
         </div>
     );
 }
@@ -387,12 +700,10 @@ function ConfirmScreen({ worker, lastAction, onRecord, onRetry }) {
    ============================================================ */
 function SuccessScreen({ data, onDone, formatTime }) {
     const isIn = data.action === 'time_in';
-
     useEffect(() => {
         const t = setTimeout(onDone, 6000);
         return () => clearTimeout(t);
     }, [onDone]);
-
     return (
         <div className="att-success">
             <div className={`att-success__icon ${isIn ? 'att-success__icon--in' : 'att-success__icon--out'}`}>

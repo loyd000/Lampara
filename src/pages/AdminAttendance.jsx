@@ -2,6 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import * as faceapi from '@vladmandic/face-api';
 import { supabase } from '../lib/supabase.js';
 
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const MODEL_URL = '/models';
 
 /* ============================================================
@@ -69,15 +76,34 @@ function WorkersTab() {
     const [workers, setWorkers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null);
 
     const load = async () => {
         setLoading(true);
-        const { data } = await supabase.from('workers').select('id, name, employee_id, position, created_at').order('created_at', { ascending: false });
+        const { data } = await supabase
+            .from('workers')
+            .select('id, name, employee_id, position, email, status, created_at')
+            .order('created_at', { ascending: false });
         setWorkers(data || []);
         setLoading(false);
     };
 
     useEffect(() => { load(); }, []);
+
+    const handleApprove = async (id) => {
+        setActionLoading(id + '_approve');
+        await supabase.from('workers').update({ status: 'active' }).eq('id', id);
+        setActionLoading(null);
+        load();
+    };
+
+    const handleReject = async (id, name) => {
+        if (!window.confirm(`Reject "${name}"'s registration?`)) return;
+        setActionLoading(id + '_reject');
+        await supabase.from('workers').update({ status: 'rejected' }).eq('id', id);
+        setActionLoading(null);
+        load();
+    };
 
     const handleDelete = async (id, name) => {
         if (!window.confirm(`Remove worker "${name}" and all their attendance records?`)) return;
@@ -86,22 +112,76 @@ function WorkersTab() {
         load();
     };
 
+    const pending = workers.filter(w => w.status === 'pending');
+    const active = workers.filter(w => w.status === 'active');
+    const rejected = workers.filter(w => w.status === 'rejected');
+
     return (
         <div>
+            {/* ---- Pending Approvals ---- */}
+            {pending.length > 0 && (
+                <div style={{ marginBottom: 'var(--sp-8)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
+                        <h2 style={{ fontSize: '1rem' }}>Pending Approvals</h2>
+                        <span style={{
+                            background: 'rgba(201,168,76,0.12)', color: 'var(--gold-dim)',
+                            borderRadius: 'var(--radius-full)', padding: '2px 10px',
+                            fontSize: '0.75rem', fontWeight: 600
+                        }}>{pending.length}</span>
+                    </div>
+                    <div className="admin-workers">
+                        {pending.map(w => {
+                            const initials = w.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                            return (
+                                <div key={w.id} className="admin-worker-card" style={{ borderColor: 'rgba(201,168,76,0.25)' }}>
+                                    <div className="admin-worker-card__avatar" style={{ background: 'rgba(201,168,76,0.1)', color: 'var(--gold-dim)' }}>
+                                        {initials}
+                                    </div>
+                                    <div className="admin-worker-card__info">
+                                        <h3>{w.name}</h3>
+                                        <p>ID: {w.employee_id}{w.position ? ` · ${w.position}` : ''}</p>
+                                        <p style={{ fontSize: '0.7rem', marginTop: 2 }}>{w.email}</p>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)', flexShrink: 0 }}>
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ fontSize: '0.8rem', minHeight: 34, padding: '6px 14px', background: 'var(--success)' }}
+                                            disabled={actionLoading === w.id + '_approve'}
+                                            onClick={() => handleApprove(w.id)}
+                                        >
+                                            {actionLoading === w.id + '_approve' ? '…' : 'Approve'}
+                                        </button>
+                                        <button
+                                            className="btn btn-outline"
+                                            style={{ color: 'var(--error)', borderColor: 'var(--error)', fontSize: '0.8rem', minHeight: 34, padding: '6px 14px' }}
+                                            disabled={actionLoading === w.id + '_reject'}
+                                            onClick={() => handleReject(w.id, w.name)}
+                                        >
+                                            {actionLoading === w.id + '_reject' ? '…' : 'Reject'}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* ---- Active Workers ---- */}
             <div className="admin-toolbar">
-                <h2>Workers ({workers.length})</h2>
+                <h2>Active Workers ({active.length})</h2>
                 <button className="btn btn-primary" style={{ fontSize: '0.875rem' }} onClick={() => setShowModal(true)}>
-                    + Register Worker
+                    + Add Worker
                 </button>
             </div>
 
             {loading ? (
                 <div className="admin-loading-inline"><div className="spinner" /></div>
-            ) : workers.length === 0 ? (
-                <p className="admin-empty">No workers registered yet.</p>
+            ) : active.length === 0 ? (
+                <p className="admin-empty">No active workers yet.</p>
             ) : (
                 <div className="admin-workers">
-                    {workers.map(w => {
+                    {active.map(w => {
                         const initials = w.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                         return (
                             <div key={w.id} className="admin-worker-card">
@@ -139,7 +219,7 @@ function WorkersTab() {
    Register Worker Modal — face capture + form
    ============================================================ */
 function RegisterWorkerModal({ onClose, onSaved }) {
-    const [form, setForm] = useState({ name: '', employee_id: '', position: '' });
+    const [form, setForm] = useState({ name: '', employee_id: '', position: '', email: '', password: '' });
     const [descriptor, setDescriptor] = useState(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -237,21 +317,27 @@ function RegisterWorkerModal({ onClose, onSaved }) {
         setError('');
         if (!descriptor) { setError('Please capture the worker\'s face first.'); return; }
         if (!form.name.trim() || !form.employee_id.trim()) { setError('Name and Employee ID are required.'); return; }
+        if (!form.email.trim()) { setError('Email is required.'); return; }
+        if (!form.password.trim() || form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
 
         setSaving(true);
-        const { error: err } = await supabase.from('workers').insert({
-            name: form.name.trim(),
-            employee_id: form.employee_id.trim(),
-            position: form.position.trim(),
-            face_descriptor: descriptor,
-        });
-
-        if (err) {
+        try {
+            const hash = await hashPassword(form.password);
+            const { error: err } = await supabase.from('workers').insert({
+                name: form.name.trim(),
+                employee_id: form.employee_id.trim(),
+                position: form.position.trim(),
+                email: form.email.toLowerCase().trim(),
+                password_hash: hash,
+                face_descriptor: descriptor,
+                status: 'active',
+            });
+            if (err) throw err;
+            onSaved();
+        } catch (err) {
             setError(err.message);
-            setSaving(false);
-            return;
         }
-        onSaved();
+        setSaving(false);
     };
 
     return (
@@ -286,6 +372,26 @@ function RegisterWorkerModal({ onClose, onSaved }) {
                             value={form.position}
                             onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
                             placeholder="e.g., Solar Installer"
+                        />
+                    </div>
+                    <div className="admin-field">
+                        <label>Email *</label>
+                        <input
+                            type="email"
+                            value={form.email}
+                            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                            required
+                            placeholder="worker@email.com"
+                        />
+                    </div>
+                    <div className="admin-field">
+                        <label>Password *</label>
+                        <input
+                            type="password"
+                            value={form.password}
+                            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                            required
+                            placeholder="At least 6 characters"
                         />
                     </div>
 

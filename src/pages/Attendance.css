@@ -539,6 +539,126 @@
     40% { transform: translateY(-4px); opacity: 1; }
 }
 
+/* --- Auth screens (login / register) --- */
+.att-auth {
+    display: flex;
+    flex-direction: column;
+}
+
+.att-auth__clock {
+    text-align: center;
+    margin-bottom: var(--sp-5);
+}
+
+.att-auth__clock .att-welcome__time {
+    font-size: 2.25rem;
+    margin-bottom: var(--sp-1);
+}
+
+.att-auth__icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(201,168,76,0.1);
+    border: 2px solid rgba(201,168,76,0.25);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--sp-4);
+}
+
+.att-auth__icon svg {
+    width: 26px;
+    height: 26px;
+    color: var(--gold);
+}
+
+/* Form */
+.att-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.att-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.att-field label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    letter-spacing: 0.02em;
+}
+
+.att-field input {
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-3) var(--sp-4);
+    font-size: 0.9375rem;
+    font-family: var(--font);
+    color: #fff;
+    min-height: 48px;
+    transition: border-color var(--duration) var(--ease);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.att-field input::placeholder {
+    color: rgba(255,255,255,0.2);
+}
+
+.att-field input:focus {
+    outline: none;
+    border-color: rgba(201,168,76,0.5);
+    background: rgba(255,255,255,0.08);
+}
+
+/* Divider */
+.att-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin: var(--sp-4) 0;
+}
+
+.att-divider::before,
+.att-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+}
+
+.att-divider span {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Back button */
+.att-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 0.8125rem;
+    color: rgba(255,255,255,0.4);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color var(--duration) var(--ease);
+    align-self: flex-start;
+}
+
+.att-back-btn:hover {
+    color: var(--gold);
+}
+
 /* Responsive – tablets and up */
 @media (min-width: 480px) {
     .att-card {
@@ -547,5 +667,9 @@
 
     .att-welcome__time {
         font-size: 3.5rem;
+    }
+
+    .att-auth__clock .att-welcome__time {
+        font-size: 2.75rem;
     }
 }
