@@ -1,6 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
-import * as faceapi from '@vladmandic/face-api';
 import { supabase } from '../lib/supabase.js';
+import { loadOpenCV, detectFace, drawDetection, isOpenCVReady } from '../lib/opencv-face-detector.js';
+
+const MODEL_URL = '/models';
+
+/* Lazy-load face-api only when needed for descriptor work */
+let _faceapi = null;
+let _faceapiPromise = null;
+async function getFaceApi() {
+    if (_faceapi) return _faceapi;
+    if (_faceapiPromise) return _faceapiPromise;
+    _faceapiPromise = (async () => {
+        const mod = await import('@vladmandic/face-api');
+        _faceapi = mod.default || mod;
+        await Promise.all([
+            _faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+            _faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            _faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+        return _faceapi;
+    })();
+    return _faceapiPromise;
+}
 
 function downloadCSV(filename, headers, rows) {
     const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -19,31 +40,19 @@ async function hashPassword(password) {
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-const MODEL_URL = '/models';
 
 /* ============================================================
    Attendance Tab — top-level, loads models once
    ============================================================ */
 export default function AttendanceTab() {
-    const [modelsLoaded, setModelsLoaded] = useState(false);
+    const [cvReady, setCvReady] = useState(false);
     const [modelError, setModelError] = useState('');
     const [subTab, setSubTab] = useState('workers'); // workers | logs | dtr
 
     useEffect(() => {
-        async function load() {
-            try {
-                await Promise.all([
-                    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-                ]);
-                setModelsLoaded(true);
-            } catch (err) {
-                setModelError('Could not load face-api models: ' + err.message);
-            }
-        }
-        if (!faceapi.nets.ssdMobilenetv1.isLoaded) load();
-        else setModelsLoaded(true);
+        loadOpenCV()
+            .then(() => setCvReady(true))
+            .catch(err => setModelError('Failed to load OpenCV: ' + err.message));
     }, []);
 
     return (
@@ -62,13 +71,13 @@ export default function AttendanceTab() {
 
             {modelError && <p className="admin-error" style={{ marginBottom: 'var(--sp-4)' }}>{modelError}</p>}
 
-            {!modelsLoaded && !modelError && (
+            {!cvReady && !modelError && (
                 <div className="admin-loading-inline">
                     <div className="spinner" />
                 </div>
             )}
 
-            {modelsLoaded && (
+            {cvReady && (
                 <>
                     {subTab === 'workers' && <WorkersTab />}
                     {subTab === 'logs' && <LogsTab />}
@@ -270,51 +279,47 @@ function RegisterWorkerModal({ onClose, onSaved }) {
     }, [cameraActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startDetectionLoop = () => {
-        detectionRef.current = setInterval(async () => {
+        detectionRef.current = setInterval(() => {
             const video = videoRef.current;
             if (!video || video.readyState < 2) return;
-            const det = await faceapi
-                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-
-            if (!canvasRef.current || !video) return;
-            const displaySize = { width: video.videoWidth, height: video.videoHeight };
-            faceapi.matchDimensions(canvasRef.current, displaySize);
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-            if (det) {
-                const resized = faceapi.resizeResults(det, displaySize);
-                faceapi.draw.drawDetections(canvasRef.current, [resized]);
+            const rect = detectFace(video);
+            drawDetection(canvasRef.current, video, rect);
+            if (rect) {
                 setCaptureStatus('Face detected — click Capture');
                 setCaptureStatusType('ok');
             } else {
                 setCaptureStatus('No face detected. Adjust your position.');
                 setCaptureStatusType('warn');
             }
-        }, 500);
+        }, 100);
     };
 
     const capture = async () => {
         const video = videoRef.current;
         if (!video) return;
-        setCaptureStatus('Processing…');
-        const det = await faceapi
-            .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-            .withFaceLandmarks()
-            .withFaceDescriptor();
+        setCaptureStatus('Processing face…');
+        setCaptureStatusType('warn');
+        try {
+            const faceapi = await getFaceApi();
+            const det = await faceapi
+                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
-        if (!det) {
-            setCaptureStatus('No face found. Try again.');
+            if (!det) {
+                setCaptureStatus('No face found. Try again.');
+                setCaptureStatusType('err');
+                return;
+            }
+
+            setDescriptor(Array.from(det.descriptor));
+            setCaptureStatus('Face captured successfully!');
+            setCaptureStatusType('ok');
+            stopCamera();
+        } catch (err) {
+            setCaptureStatus('Error processing face: ' + err.message);
             setCaptureStatusType('err');
-            return;
         }
-
-        setDescriptor(Array.from(det.descriptor));
-        setCaptureStatus('Face captured successfully!');
-        setCaptureStatusType('ok');
-        stopCamera();
     };
 
     const stopCamera = () => {

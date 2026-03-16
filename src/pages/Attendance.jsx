@@ -1,10 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import * as faceapi from '@vladmandic/face-api';
 import { supabase } from '../lib/supabase.js';
 import { Link } from 'react-router-dom';
+import { loadOpenCV, detectFace, drawDetection, isOpenCVReady } from '../lib/opencv-face-detector.js';
 import './Attendance.css';
 
 const MODEL_URL = '/models';
+
+/* Lazy-load face-api only when needed for descriptor work */
+let _faceapi = null;
+let _faceapiPromise = null;
+async function getFaceApi() {
+    if (_faceapi) return _faceapi;
+    if (_faceapiPromise) return _faceapiPromise;
+    _faceapiPromise = (async () => {
+        const mod = await import('@vladmandic/face-api');
+        _faceapi = mod.default || mod;
+        await Promise.all([
+            _faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            _faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            _faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+        return _faceapi;
+    })();
+    return _faceapiPromise;
+}
 
 async function hashPassword(password) {
     const encoder = new TextEncoder();
@@ -19,7 +38,7 @@ async function hashPassword(password) {
             camera | confirm | success
    ============================================================ */
 export default function Attendance() {
-    const [modelsLoaded, setModelsLoaded] = useState(false);
+    const [cvReady, setCvReady] = useState(false);
     const [modelError, setModelError] = useState('');
     const [screen, setScreen] = useState('login');
     const [currentWorker, setCurrentWorker] = useState(null);
@@ -33,19 +52,9 @@ export default function Attendance() {
     }, []);
 
     useEffect(() => {
-        async function loadModels() {
-            try {
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-                ]);
-                setModelsLoaded(true);
-            } catch (err) {
-                setModelError('Failed to load face recognition models. ' + err.message);
-            }
-        }
-        loadModels();
+        loadOpenCV()
+            .then(() => setCvReady(true))
+            .catch(err => setModelError('Failed to load OpenCV: ' + err.message));
     }, []);
 
     const handleLogin = async (worker) => {
@@ -130,7 +139,7 @@ export default function Attendance() {
 
                 {screen === 'register' && (
                     <RegisterScreen
-                        modelsLoaded={modelsLoaded}
+                        cvReady={cvReady}
                         onBack={() => setScreen('login')}
                         onSubmitted={() => setScreen('pending')}
                     />
@@ -155,13 +164,13 @@ export default function Attendance() {
                         worker={currentWorker}
                         time={formatTime(liveTime)}
                         date={formatDate(liveTime)}
-                        modelsLoaded={modelsLoaded}
+                        cvReady={cvReady}
                         onStart={() => setScreen('camera')}
                         onLogout={logout}
                     />
                 )}
 
-                {screen === 'camera' && currentWorker && modelsLoaded && (
+                {screen === 'camera' && currentWorker && cvReady && (
                     <CameraScreen
                         worker={currentWorker}
                         onVerified={handleFaceVerified}
@@ -293,7 +302,7 @@ function LoginScreen({ time, date, onLogin, onRegister }) {
 /* ============================================================
    Register Screen
    ============================================================ */
-function RegisterScreen({ modelsLoaded, onBack, onSubmitted }) {
+function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     const [form, setForm] = useState({ name: '', employee_id: '', position: '', email: '', password: '', confirmPassword: '' });
     const [descriptor, setDescriptor] = useState(null);
     const [error, setError] = useState('');
@@ -308,7 +317,7 @@ function RegisterScreen({ modelsLoaded, onBack, onSubmitted }) {
 
     const startCamera = async () => {
         setError('');
-        if (!modelsLoaded) { setError('Face recognition models are still loading. Please wait.'); return; }
+        if (!cvReady) { setError('Face detection is still loading. Please wait.'); return; }
         setCaptureStatus('Starting camera…');
         setCaptureStatusType('warn');
         try {
@@ -336,41 +345,41 @@ function RegisterScreen({ modelsLoaded, onBack, onSubmitted }) {
     }, [cameraActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startLoop = () => {
-        detectionRef.current = setInterval(async () => {
+        detectionRef.current = setInterval(() => {
             const video = videoRef.current;
             if (!video || video.readyState < 2) return;
-            const det = await faceapi
-                .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-            if (!canvasRef.current) return;
-            const displaySize = { width: video.videoWidth, height: video.videoHeight };
-            faceapi.matchDimensions(canvasRef.current, displaySize);
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-            if (det) {
-                faceapi.draw.drawDetections(canvasRef.current, [faceapi.resizeResults(det, displaySize)]);
+            const rect = detectFace(video);
+            drawDetection(canvasRef.current, video, rect);
+            if (rect) {
                 setCaptureStatus('Face detected — click Capture');
                 setCaptureStatusType('ok');
             } else {
                 setCaptureStatus('No face detected. Adjust your position.');
                 setCaptureStatusType('warn');
             }
-        }, 500);
+        }, 100);
     };
 
     const capture = async () => {
         const video = videoRef.current;
         if (!video) return;
-        const det = await faceapi
-            .detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-            .withFaceLandmarks()
-            .withFaceDescriptor();
-        if (!det) { setCaptureStatus('No face detected. Try again.'); setCaptureStatusType('err'); return; }
-        setDescriptor(Array.from(det.descriptor));
-        setCaptureStatus('Face captured!');
-        setCaptureStatusType('ok');
-        stopCamera();
+        setCaptureStatus('Processing face…');
+        setCaptureStatusType('warn');
+        try {
+            const faceapi = await getFaceApi();
+            const det = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+            if (!det) { setCaptureStatus('No face detected. Try again.'); setCaptureStatusType('err'); return; }
+            setDescriptor(Array.from(det.descriptor));
+            setCaptureStatus('Face captured!');
+            setCaptureStatusType('ok');
+            stopCamera();
+        } catch (err) {
+            setCaptureStatus('Error processing face: ' + err.message);
+            setCaptureStatusType('err');
+        }
     };
 
     const stopCamera = () => {
@@ -525,7 +534,7 @@ function StatusScreen({ type, onBack }) {
 /* ============================================================
    Welcome Screen (post-login)
    ============================================================ */
-function WelcomeScreen({ worker, time, date, modelsLoaded, onStart, onLogout }) {
+function WelcomeScreen({ worker, time, date, cvReady, onStart, onLogout }) {
     const initials = worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     return (
         <div className="att-welcome">
@@ -534,10 +543,10 @@ function WelcomeScreen({ worker, time, date, modelsLoaded, onStart, onLogout }) 
             <div className="att-confirm__avatar" style={{ margin: '0 auto var(--sp-4)' }}>{initials}</div>
             <h2 style={{ color: '#fff', marginBottom: 'var(--sp-1)' }}>Hello, {worker.name.split(' ')[0]}!</h2>
             <p style={{ marginBottom: 'var(--sp-8)' }}>{worker.position || 'Worker'} &nbsp;·&nbsp; ID: {worker.employee_id}</p>
-            {!modelsLoaded ? (
+            {!cvReady ? (
                 <div className="att-loading">
                     <div className="att-loading__spinner" />
-                    <p>Loading face recognition…</p>
+                    <p>Loading face detection…</p>
                 </div>
             ) : (
                 <button className="att-btn-primary" onClick={onStart}>
@@ -603,62 +612,81 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             return;
         }
         const targetDescriptor = new Float32Array(worker.face_descriptor);
+        let isVerifying = false; // guard against overlapping face-api calls
 
-        const detect = async () => {
+        const detect = () => {
             if (verifiedRef.current || !videoRef.current) return;
             const video = videoRef.current;
 
             if (document.hidden || video.paused || video.readyState < 2) {
-                intervalRef.current = setTimeout(detect, 500);
+                intervalRef.current = setTimeout(detect, 200);
                 return;
             }
 
-            const detection = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
+            // Fast OpenCV detection
+            const rect = detectFace(video);
+            drawDetection(canvasRef.current, video, rect);
 
-            if (verifiedRef.current) return;
-
-            if (canvasRef.current) {
-                const displaySize = { width: video.videoWidth, height: video.videoHeight };
-                faceapi.matchDimensions(canvasRef.current, displaySize);
-                const ctx = canvasRef.current.getContext('2d');
-                ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-                if (detection) faceapi.draw.drawDetections(canvasRef.current, [faceapi.resizeResults(detection, displaySize)]);
-            }
-
-            if (!detection) {
+            if (!rect) {
                 setStatus('scanning');
                 setStatusMsg('Position your face in the frame');
-                intervalRef.current = setTimeout(detect, 500);
+                intervalRef.current = setTimeout(detect, 100);
+                return;
+            }
+
+            // Face found by OpenCV — now do heavy descriptor work with face-api
+            if (isVerifying) {
+                intervalRef.current = setTimeout(detect, 200);
                 return;
             }
 
             setStatus('detected');
             setStatusMsg('Verifying identity…');
+            isVerifying = true;
 
-            const distance = faceapi.euclideanDistance(detection.descriptor, targetDescriptor);
-            if (distance > 0.6) {
-                setStatus('nomatch');
-                setStatusMsg('Face does not match. Try again.');
-                intervalRef.current = setTimeout(() => {
+            getFaceApi().then(async (faceapi) => {
+                if (verifiedRef.current) return;
+
+                const detection = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+
+                if (verifiedRef.current) return;
+                isVerifying = false;
+
+                if (!detection) {
                     setStatus('scanning');
                     setStatusMsg('Position your face in the frame');
-                    intervalRef.current = setTimeout(detect, 500);
-                }, 2000);
-                return;
-            }
+                    intervalRef.current = setTimeout(detect, 100);
+                    return;
+                }
 
-            verifiedRef.current = true;
-            clearTimeout(intervalRef.current);
-            streamRef.current?.getTracks().forEach(t => t.stop());
-            setStatus('matched');
-            setStatusMsg('Identity verified!');
-            setTimeout(onVerified, 700);
+                const distance = faceapi.euclideanDistance(detection.descriptor, targetDescriptor);
+                if (distance > 0.6) {
+                    setStatus('nomatch');
+                    setStatusMsg('Face does not match. Try again.');
+                    intervalRef.current = setTimeout(() => {
+                        setStatus('scanning');
+                        setStatusMsg('Position your face in the frame');
+                        intervalRef.current = setTimeout(detect, 200);
+                    }, 2000);
+                    return;
+                }
+
+                verifiedRef.current = true;
+                clearTimeout(intervalRef.current);
+                streamRef.current?.getTracks().forEach(t => t.stop());
+                setStatus('matched');
+                setStatusMsg('Identity verified!');
+                setTimeout(onVerified, 700);
+            }).catch(() => {
+                isVerifying = false;
+                intervalRef.current = setTimeout(detect, 500);
+            });
         };
 
-        intervalRef.current = setTimeout(detect, 500);
+        intervalRef.current = setTimeout(detect, 200);
     };
 
     const statusClass = {
