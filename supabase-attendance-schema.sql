@@ -86,7 +86,7 @@ RETURNS TABLE(
     id uuid,
     name text,
     employee_id text,
-    position text,
+    "position" text,
     face_descriptor float8[],
     status text
 )
