@@ -653,7 +653,7 @@ function Contact() {
             const payload = {
                 service_id: 'service_lampara',
                 template_id: 'template_lampara',
-                user_id: 'YOUR_EMAILJS_PUBLIC_KEY', // Replace with your EmailJS public key
+                user_id: '_rgBAjoEUDIAq9fGO', // Replace with your EmailJS public key
                 template_params: {
                     from_name: form.name,
                     from_email: form.email,

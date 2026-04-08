@@ -5,10 +5,9 @@ import './Schedule.css';
 // ============================================================
 // EmailJS — Replace these with your actual credentials
 // ============================================================
-const EMAILJS_SERVICE_ID      = 'YOUR_EMAILJS_SERVICE_ID';
-const EMAILJS_COMPANY_TPL     = 'YOUR_EMAILJS_COMPANY_TEMPLATE_ID'; // notifies lamparaeis@gmail.com
-const EMAILJS_CLIENT_TPL      = 'YOUR_EMAILJS_CLIENT_TEMPLATE_ID';  // auto-reply to client
-const EMAILJS_PUBLIC_KEY      = 'YOUR_EMAILJS_PUBLIC_KEY';
+const EMAILJS_SERVICE_ID      = 'service_lampara';
+const EMAILJS_COMPANY_TPL     = 'template_booking_company'; // notifies lamparaeis@gmail.com
+const EMAILJS_PUBLIC_KEY      = '_rgBAjoEUDIAq9fGO';
 // ============================================================
 
 const MONTH_NAMES = [
@@ -269,13 +268,6 @@ function BookingModal({ date, dateDisplay, onClose, onSuccess }) {
                 client_address: form.address,
                 client_message: form.message || 'No additional notes',
                 to_email:       'lamparaeis@gmail.com',
-            });
-
-            // 3. Auto-reply to client
-            await sendEmail(EMAILJS_CLIENT_TPL, {
-                booking_date: dateDisplay,
-                client_name:  form.name,
-                to_email:     form.email,
             });
 
             onSuccess('Booking submitted! We\'ll reach out within 24 hours to confirm your appointment.');
