@@ -665,6 +665,9 @@ function Contact() {
         
         return null;
     };
+    
+    // Check if form is valid for real-time feedback
+    const isFormValid = validateEmail() === null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -802,7 +805,7 @@ function Contact() {
                                     id="contact-submit"
                                     type="submit"
                                     className="btn btn-gold btn-lg contact__submit"
-                                    disabled={status === 'sending'}
+                                    disabled={status === 'sending' || !isFormValid}
                                 >
                                     {status === 'sending' ? 'Sending…' : 'Send Message'}
                                 </button>

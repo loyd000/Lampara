@@ -146,6 +146,7 @@ function Dashboard({ user }) {
     const [modal, setModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, title }
+    const [deleting, setDeleting] = useState(false); // Track deletion in progress
 
     const loadProjects = async () => {
         setLoading(true);
@@ -177,6 +178,7 @@ function Dashboard({ user }) {
         const project = projects.find((p) => p.id === id);
         const photos = project?.project_photos || [];
         
+        setDeleting(true);
         try {
             // Delete photos from storage
             if (photos.length > 0) {
@@ -196,6 +198,8 @@ function Dashboard({ user }) {
         } catch (err) {
             console.error('Delete failed:', err);
             alert('Failed to delete project: ' + err.message);
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -316,16 +320,18 @@ function Dashboard({ user }) {
                             <button
                                 className="btn btn-outline"
                                 onClick={() => setDeleteConfirm(null)}
-                                style={{ padding: '0.5rem 1rem' }}
+                                disabled={deleting}
+                                style={{ padding: '0.5rem 1rem', opacity: deleting ? 0.6 : 1 }}
                             >
                                 Cancel
                             </button>
                             <button
                                 className="btn"
                                 onClick={confirmDelete}
-                                style={{ padding: '0.5rem 1rem', background: 'var(--error)', color: 'white', border: 'none' }}
+                                disabled={deleting}
+                                style={{ padding: '0.5rem 1rem', background: 'var(--error)', color: 'white', border: 'none', opacity: deleting ? 0.6 : 1, cursor: deleting ? 'not-allowed' : 'pointer' }}
                             >
-                                Delete Permanently
+                                {deleting ? 'Deleting...' : 'Delete Permanently'}
                             </button>
                         </div>
                     </div>
