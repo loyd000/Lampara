@@ -47,6 +47,27 @@ async function hashPassword(password) {
 }
 
 /* ============================================================
+   Isolated Clock Component (Prevents parent lag when ticking)
+   ============================================================ */
+function LiveClock() {
+    const [time, setTime] = useState(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (d) => d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const formatDate = (d) => d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    return (
+        <div className="att-auth__clock">
+            <div className="att-welcome__time">{formatTime(time)}</div>
+            <div className="att-welcome__date">{formatDate(time)}</div>
+        </div>
+    );
+}
+
+/* ============================================================
    Root
    screens: login | register | pending | rejected | welcome |
             camera | confirm | success
@@ -58,12 +79,6 @@ export default function Attendance() {
     const [currentWorker, setCurrentWorker] = useState(null);
     const [lastAction, setLastAction] = useState(null);
     const [successData, setSuccessData] = useState(null);
-    const [liveTime, setLiveTime] = useState(new Date());
-
-    useEffect(() => {
-        const timer = setInterval(() => setLiveTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
 
     useEffect(() => {
         getFaceApi()
@@ -125,7 +140,9 @@ export default function Attendance() {
             logged_at: new Date().toISOString(),
             date: new Date().toISOString().split('T')[0],
         });
-        if (!error) {
+        if (error) {
+            alert('Failed to save attendance: ' + error.message);
+        } else {
             setSuccessData({ worker: currentWorker, action, time: new Date(), type });
             setScreen('success');
         }
@@ -177,8 +194,6 @@ export default function Attendance() {
 
                 {screen === 'login' && (
                     <LoginScreen
-                        time={formatTime(liveTime)}
-                        date={formatDate(liveTime)}
                         onLogin={handleLogin}
                         onRegister={() => setScreen('register')}
                     />
@@ -209,8 +224,6 @@ export default function Attendance() {
                 {screen === 'welcome' && currentWorker && (
                     <WelcomeScreen
                         worker={currentWorker}
-                        time={formatTime(liveTime)}
-                        date={formatDate(liveTime)}
                         cvReady={cvReady}
                         onStart={() => setScreen('camera')}
                         onLogout={logout}
@@ -251,11 +264,12 @@ export default function Attendance() {
 /* ============================================================
    Login Screen
    ============================================================ */
-function LoginScreen({ time, date, onLogin, onRegister }) {
-    const [email, setEmail] = useState('');
+function LoginScreen({ onLogin, onRegister }) {
+    const [employeeId, setEmployeeId] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -264,14 +278,14 @@ function LoginScreen({ time, date, onLogin, onRegister }) {
         try {
             const hash = await hashPassword(password);
             const { data, error: rpcError } = await supabase.rpc('worker_login', {
-                p_email: email.toLowerCase().trim(),
+                p_employee_id: employeeId.toUpperCase().trim(),
                 p_password_hash: hash,
             });
 
             if (rpcError) throw rpcError;
 
             if (!data || data.length === 0) {
-                setError('Invalid email or password.');
+                setError('Invalid employee ID or password.');
                 setLoading(false);
                 return;
             }
@@ -297,10 +311,7 @@ function LoginScreen({ time, date, onLogin, onRegister }) {
 
     return (
         <div className="att-auth">
-            <div className="att-auth__clock">
-                <div className="att-welcome__time">{time}</div>
-                <div className="att-welcome__date">{date}</div>
-            </div>
+            <LiveClock />
 
             <div className="att-auth__icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -312,26 +323,50 @@ function LoginScreen({ time, date, onLogin, onRegister }) {
 
             <form onSubmit={handleSubmit} className="att-form">
                 <div className="att-field">
-                    <label>Email</label>
+                    <label>Employee ID</label>
                     <input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        type="text"
+                        value={employeeId}
+                        onChange={e => setEmployeeId(e.target.value)}
                         required
-                        placeholder="your@email.com"
-                        autoComplete="email"
+                        placeholder="EMP-001"
+                        autoComplete="username"
                     />
                 </div>
                 <div className="att-field">
                     <label>Password</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        required
-                        placeholder="••••••••"
-                        autoComplete="current-password"
-                    />
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            style={{ paddingRight: '40px', width: '100%', boxSizing: 'border-box' }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            style={{
+                                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                                background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+                                padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                        >
+                            {showPassword ? (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            ) : (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            )}
+                        </button>
+                    </div>
                 </div>
                 {error && <div className="att-error-msg">{error}</div>}
                 <button type="submit" className="att-btn-primary" disabled={loading}>
@@ -597,12 +632,11 @@ function StatusScreen({ type, onBack }) {
 /* ============================================================
    Welcome Screen (post-login)
    ============================================================ */
-function WelcomeScreen({ worker, time, date, cvReady, onStart, onLogout }) {
+function WelcomeScreen({ worker, cvReady, onStart, onLogout }) {
     const initials = worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     return (
         <div className="att-welcome">
-            <div className="att-welcome__time">{time}</div>
-            <div className="att-welcome__date">{date}</div>
+            <LiveClock />
             <div className="att-confirm__avatar" style={{ margin: '0 auto var(--sp-4)' }}>{initials}</div>
             <h2 style={{ color: '#fff', marginBottom: 'var(--sp-1)' }}>Hello, {worker.name.split(' ')[0]}!</h2>
             <p style={{ marginBottom: 'var(--sp-8)' }}>{worker.position || 'Worker'} &nbsp;·&nbsp; ID: {worker.employee_id}</p>

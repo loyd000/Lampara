@@ -81,7 +81,7 @@ CREATE POLICY "admin_all_attendance" ON attendance_logs
 -- return status for pending/rejected feedback)
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION worker_login(p_email text, p_password_hash text)
+CREATE OR REPLACE FUNCTION worker_login(p_employee_id text, p_password_hash text)
 RETURNS TABLE(
     id uuid,
     name text,
@@ -99,7 +99,7 @@ BEGIN
                w.face_descriptor, w.face_descriptor_mobile, w.status,
                w.daily_rate
         FROM workers w
-        WHERE w.email = lower(trim(p_email))
+        WHERE w.employee_id = upper(trim(p_employee_id))
           AND w.password_hash = p_password_hash;
 END;
 $$;
