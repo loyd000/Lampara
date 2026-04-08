@@ -634,31 +634,288 @@
 
 /* --- Contact --- */
 .contact-section {
-    background: var(--navy);
-    padding: var(--sp-16) 0;
-    text-align: center;
+    background: linear-gradient(160deg, #0a192f 0%, #0d2244 100%);
+    padding: var(--sp-16) 0 var(--sp-20);
+    position: relative;
+    overflow: hidden;
 }
 
-.contact__inner {
+.contact-section::before {
+    content: '';
+    position: absolute;
+    top: -120px;
+    right: -120px;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(201, 168, 76, 0.07) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Header */
+.contact__header {
+    text-align: center;
+    margin-bottom: var(--sp-12);
+}
+
+.contact__header h2 {
+    margin: var(--sp-3) 0 var(--sp-3);
+    font-size: 2rem;
+}
+
+.contact__header p {
+    font-size: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+/* Gold-outline badge variant */
+.badge-gold-outline {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(201, 168, 76, 0.5);
+    color: var(--gold);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(201, 168, 76, 0.08);
+}
+
+/* Two-column grid */
+.contact__grid {
+    display: grid;
+    gap: var(--sp-8);
+}
+
+/* Form wrapper */
+.contact__form-wrap {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-8);
+    backdrop-filter: blur(8px);
+}
+
+/* Form */
+.contact__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+}
+
+.contact__row {
+    display: grid;
+    gap: var(--sp-4);
+}
+
+.contact__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.contact__field label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.02em;
+}
+
+.contact__field input,
+.contact__field textarea {
+    width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    min-height: 48px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-family: inherit;
+    transition: border-color var(--duration) var(--ease), background var(--duration) var(--ease);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.contact__field input::placeholder,
+.contact__field textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.contact__field input:focus,
+.contact__field textarea:focus {
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.contact__field textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.contact__submit {
+    width: 100%;
+    justify-content: center;
+    margin-top: var(--sp-2);
+}
+
+.contact__submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.contact__error {
+    font-size: 0.875rem;
+    color: #ff8080;
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.2);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-3) var(--sp-4);
+    margin-top: calc(var(--sp-2) * -1);
+}
+
+/* Success state */
+.contact__success {
     display: flex;
     flex-direction: column;
     align-items: center;
+    text-align: center;
+    padding: var(--sp-12) var(--sp-6);
+    gap: var(--sp-4);
+}
+
+.contact__success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4ade80;
+}
+
+.contact__success h3 {
+    font-size: 1.25rem;
+    color: #fff;
+    margin: 0;
+}
+
+.contact__success p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9375rem;
+    margin: 0;
+}
+
+/* Outline-light button variant */
+.btn-outline-light {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.8);
+    background: transparent;
+    padding: var(--sp-3) var(--sp-6);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color var(--duration) var(--ease), color var(--duration) var(--ease);
+}
+
+.btn-outline-light:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+}
+
+/* Info column */
+.contact__info {
+    display: flex;
+    flex-direction: column;
     gap: var(--sp-6);
 }
 
-.contact__inner .section-header {
-    margin-bottom: 0;
+.contact__info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-4);
 }
 
-.contact__area {
-    font-size: 0.8125rem;
+.contact__info-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius);
+    background: rgba(201, 168, 76, 0.1);
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+}
+
+.contact__info-item > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.contact__info-item span {
+    font-size: 0.75rem;
+    font-weight: 500;
     color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.contact__info-item a,
+.contact__info-item p {
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.contact__info-item a:hover {
+    color: var(--gold);
+}
+
+.contact__fb-btn {
+    display: flex;
+    justify-content: center;
     margin-top: var(--sp-2);
+}
+
+/* Responsive */
+@media (min-width: 640px) {
+    .contact__row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .contact__header h2 {
+        font-size: 2.5rem;
+    }
 }
 
 @media (min-width: 1024px) {
     .contact-section {
         padding: var(--sp-24) 0;
+    }
+
+    .contact__grid {
+        grid-template-columns: 1fr 420px;
+        gap: var(--sp-12);
+        align-items: start;
+    }
+
+    .contact__header {
+        text-align: left;
+        margin-bottom: var(--sp-10);
+    }
+
+    .contact__header p {
+        margin: 0;
     }
 }
 

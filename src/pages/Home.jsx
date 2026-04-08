@@ -597,27 +597,190 @@ function FAQItem({ q, a }) {
    CONTACT
    ============================ */
 function Contact() {
+    const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+    const [status, setStatus] = useState('idle'); // idle | sending | success | error
+
+    const handleChange = (e) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setStatus('sending');
+
+        try {
+            // EmailJS send via public API (no SDK needed)
+            const payload = {
+                service_id: 'service_lampara',
+                template_id: 'template_lampara',
+                user_id: 'YOUR_EMAILJS_PUBLIC_KEY', // Replace with your EmailJS public key
+                template_params: {
+                    from_name: form.name,
+                    from_email: form.email,
+                    from_phone: form.phone,
+                    message: form.message,
+                    to_email: 'lamparaeis@gmail.com',
+                },
+            };
+
+            const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) throw new Error('Failed to send');
+            setStatus('success');
+            setForm({ name: '', email: '', phone: '', message: '' });
+        } catch {
+            setStatus('error');
+        }
+    };
+
     return (
         <section id="contact" className="contact-section">
             <div className="container">
-                <div className="contact__inner">
-                    <div className="section-header">
-                        <h2 style={{ color: '#fff' }}>Ready to Go Solar?</h2>
-                        <p style={{ color: 'rgba(255,255,255,0.7)' }}>
-                            Contact us today for a free consultation and quote.
-                        </p>
-                    </div>
-                    <a
-                        href="https://www.facebook.com/lamparaeis"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-gold btn-lg"
-                    >
-                        Message us on Facebook
-                    </a>
-                    <p className="contact__area">
-                        Servicing: Metro Manila, Cavite, Laguna, Batangas, Rizal, Quezon
+                <div className="contact__header">
+                    <div className="badge badge-gold-outline">Contact Us</div>
+                    <h2 style={{ color: '#fff' }}>Ready to Go Solar?</h2>
+                    <p style={{ color: 'rgba(255,255,255,0.65)' }}>
+                        Send us a message and we'll get back to you within 24 hours with a free quote.
                     </p>
+                </div>
+
+                <div className="contact__grid">
+                    {/* Left — Email Form */}
+                    <div className="contact__form-wrap">
+                        {status === 'success' ? (
+                            <div className="contact__success">
+                                <div className="contact__success-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                </div>
+                                <h3>Message Sent!</h3>
+                                <p>Thank you! We'll reach out to you shortly.</p>
+                                <button className="btn btn-outline-light" onClick={() => setStatus('idle')}>
+                                    Send Another
+                                </button>
+                            </div>
+                        ) : (
+                            <form className="contact__form" onSubmit={handleSubmit} noValidate>
+                                <div className="contact__row">
+                                    <div className="contact__field">
+                                        <label htmlFor="contact-name">Full Name</label>
+                                        <input
+                                            id="contact-name"
+                                            type="text"
+                                            name="name"
+                                            placeholder="Juan dela Cruz"
+                                            value={form.name}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="contact__field">
+                                        <label htmlFor="contact-phone">Phone Number</label>
+                                        <input
+                                            id="contact-phone"
+                                            type="tel"
+                                            name="phone"
+                                            placeholder="09XX XXX XXXX"
+                                            value={form.phone}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="contact__field">
+                                    <label htmlFor="contact-email">Email Address</label>
+                                    <input
+                                        id="contact-email"
+                                        type="email"
+                                        name="email"
+                                        placeholder="you@email.com"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="contact__field">
+                                    <label htmlFor="contact-message">Message</label>
+                                    <textarea
+                                        id="contact-message"
+                                        name="message"
+                                        rows={4}
+                                        placeholder="Tell us about your property, current electricity bill, or any questions…"
+                                        value={form.message}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                {status === 'error' && (
+                                    <p className="contact__error">
+                                        ⚠ Something went wrong. Please try again or email us directly.
+                                    </p>
+                                )}
+                                <button
+                                    id="contact-submit"
+                                    type="submit"
+                                    className="btn btn-gold btn-lg contact__submit"
+                                    disabled={status === 'sending'}
+                                >
+                                    {status === 'sending' ? 'Sending…' : 'Send Message'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+
+                    {/* Right — Info */}
+                    <div className="contact__info">
+                        <div className="contact__info-item">
+                            <div className="contact__info-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                    <polyline points="22,6 12,13 2,6" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span>Email</span>
+                                <a href="mailto:lamparaeis@gmail.com">lamparaeis@gmail.com</a>
+                            </div>
+                        </div>
+
+                        <div className="contact__info-item">
+                            <div className="contact__info-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                                    <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span>Facebook</span>
+                                <a href="https://www.facebook.com/lamparaeis" target="_blank" rel="noopener noreferrer">@lamparaeis</a>
+                            </div>
+                        </div>
+
+                        <div className="contact__info-item">
+                            <div className="contact__info-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span>Service Area</span>
+                                <p>Metro Manila, Cavite, Laguna, Batangas, Rizal, Quezon</p>
+                            </div>
+                        </div>
+
+                        <a
+                            href="https://www.facebook.com/lamparaeis"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-gold btn-lg contact__fb-btn"
+                        >
+                            Message on Facebook
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>
