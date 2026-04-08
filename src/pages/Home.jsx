@@ -128,8 +128,8 @@ function Stats() {
         <section className="stats">
             <div className="container">
                 <div className="stats__grid">
-                    {stats.map((s) => (
-                        <div key={s.label} className="stats__item">
+                    {stats.map((s, idx) => (
+                        <div key={s.label} className="stats__item" data-aos="count-up" data-aos-delay={idx * 100}>
                             <div className="stats__value">{s.value}</div>
                             <div className="stats__label">{s.label}</div>
                         </div>
@@ -162,7 +162,7 @@ function About() {
         <section id="about" className="section">
             <div className="container">
                 <div className="about">
-                    <div className="about__text">
+                    <div className="about__text" data-aos="fade-right">
                         <div className="section-header">
                             <div className="badge badge-gold">About Us</div>
                             <h2>Your Trusted Solar Partner</h2>
@@ -179,7 +179,7 @@ function About() {
                             design custom solar solutions that fit your energy needs and budget.
                         </p>
                     </div>
-                    <div className="about__image">
+                    <div className="about__image" data-aos="fade-left">
                         <div className="about__slideshow">
                             {ABOUT_IMAGES.map((img, i) => (
                                 <img
@@ -344,8 +344,8 @@ function Installations() {
                         ? [0, 1, 2].map((i) => (
                             <div key={i} className="skeleton installs__skeleton" />
                         ))
-                        : projects.map((p) => (
-                            <div key={p.id} className="card installs__card">
+                        : projects.map((p, idx) => (
+                            <div key={p.id} className="card installs__card" data-aos="zoom-in" data-aos-delay={idx * 100}>
                                 <div className="installs__img">
                                     {getCover(p) && (
                                         <img src={getCover(p)} alt={p.title} loading="lazy" />
@@ -425,8 +425,8 @@ function SolarInfo() {
                     <h2>Why Choose Solar Power?</h2>
                 </div>
                 <div className="benefits__grid">
-                    {benefits.map((b) => (
-                        <div key={b.title} className="card benefits__card">
+                    {benefits.map((b, idx) => (
+                        <div key={b.title} className="card benefits__card" data-aos="fade-up" data-aos-delay={idx * 100}>
                             <div className="benefits__icon">{b.icon}</div>
                             <h3>{b.title}</h3>
                             <p>{b.desc}</p>
@@ -473,7 +473,7 @@ function Calculator() {
                     <p>See how much you could save with solar power</p>
                 </div>
 
-                <div className="calc">
+                <div className="calc" data-aos="fade-up">
                     <div className="calc__sizes">
                         <label className="calc__label">System Size (kWp)</label>
                         <div className="calc__options">
@@ -549,8 +549,8 @@ function Testimonials() {
                     <h2>What Our Clients Say</h2>
                 </div>
                 <div className="testimonials__grid">
-                    {items.map((t) => (
-                        <div key={t.name} className="card testimonials__card">
+                    {items.map((t, idx) => (
+                        <div key={t.name} className="card testimonials__card" data-aos="fade-up" data-aos-delay={idx * 100}>
                             <p className="testimonials__text">"{t.text}"</p>
                             <div className="testimonials__author">
                                 <div className="testimonials__avatar">{t.initials}</div>
@@ -611,7 +611,7 @@ function FAQItem({ q, a }) {
     const [open, setOpen] = useState(false);
 
     return (
-        <div className={`faq__item ${open ? 'faq__item--open' : ''}`}>
+        <div className={`faq__item ${open ? 'faq__item--open' : ''}`} data-aos="fade-up">
             <button className="faq__question" onClick={() => setOpen(!open)}>
                 <span>{q}</span>
                 <svg
@@ -690,7 +690,7 @@ function Contact() {
 
                 <div className="contact__grid">
                     {/* Left — Email Form */}
-                    <div className="contact__form-wrap">
+                    <div className="contact__form-wrap" data-aos="fade-right">
                         {status === 'success' ? (
                             <div className="contact__success">
                                 <div className="contact__success-icon">

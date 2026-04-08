@@ -1,4 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import AOS from 'aos';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
@@ -9,6 +11,11 @@ import Attendance from './pages/Attendance.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 
 export default function App() {
+    const location = useLocation();
+
+    useEffect(() => {
+        AOS.refresh();
+    }, [location]);
     return (
         <>
             <Routes>

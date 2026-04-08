@@ -108,7 +108,7 @@ export default function Gallery() {
                         ) : filtered.length === 0 ? (
                             <p className="gallery-empty">No projects found.</p>
                         ) : (
-                            filtered.map((project) => {
+                            filtered.map((project, idx) => {
                                 const coverUrl = getCover(project);
                                 const photoCount = (project.project_photos || []).length;
 
@@ -117,6 +117,8 @@ export default function Gallery() {
                                         key={project.id}
                                         className="gallery-card"
                                         onClick={() => openLightbox(project)}
+                                        data-aos="zoom-in"
+                                        data-aos-delay={idx * 50}
                                     >
                                         <div className="gallery-card__img">
                                             {coverUrl && (
@@ -140,7 +142,7 @@ export default function Gallery() {
                     </div>
 
                     {/* CTA */}
-                    <div className="gallery-cta card">
+                    <div className="gallery-cta card" data-aos="fade-up">
                         <strong>Want to see your property transformed?</strong>
                         <p>
                             Contact us today for a free consultation. We'll design a custom solar

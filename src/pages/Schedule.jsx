@@ -111,7 +111,7 @@ export default function Schedule() {
             {/* Calendar */}
             <section className="section">
                 <div className="container">
-                    <div className="sched-card">
+                    <div className="sched-card" data-aos="fade-up">
 
                         {/* Month navigator */}
                         <div className="sched-nav">
