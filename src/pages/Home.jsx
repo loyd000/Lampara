@@ -562,19 +562,6 @@ function Testimonials() {
                         </div>
                     ))}
                 </div>
-                <div className="text-center" style={{ marginTop: 'var(--sp-8)' }}>
-                    <a
-                        href="https://www.facebook.com/lamparaeis/reviews"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-outline"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
-                        </svg>
-                        View Reviews on Facebook
-                    </a>
-                </div>
             </div>
         </section>
     );
