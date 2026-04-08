@@ -681,9 +681,9 @@ function Contact() {
         try {
             // Sanitize inputs
             const payload = {
-                service_id: 'service_lampara',
-                template_id: 'template_lampara',
-                user_id: '_rgBAjoEUDIAq9fGO',
+                service_id: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+                template_id: import.meta.env.VITE_EMAILJS_CONTACT_TEMPLATE_ID,
+                user_id: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
                 template_params: {
                     from_name: form.name.trim(),
                     from_email: form.email.toLowerCase().trim(),

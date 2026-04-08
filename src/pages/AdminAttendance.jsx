@@ -560,7 +560,25 @@ function LogsTab() {
     const [filterDate, setFilterDate] = useState('');
 
     useEffect(() => {
-        supabase.from('workers').select('id, name').order('name').then(({ data }) => setWorkers(data || []));
+        let isMounted = true;
+        
+        const loadWorkers = async () => {
+            try {
+                const { data, error } = await supabase.from('workers').select('id, name').order('name');
+                if (error) throw error;
+                if (isMounted) {
+                    setWorkers(data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load workers:', err);
+            }
+        };
+        
+        loadWorkers();
+        
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
@@ -687,9 +705,25 @@ function DTRTab() {
     const [workerInfo, setWorkerInfo] = useState(null);
 
     useEffect(() => {
-        supabase.from('workers').select('id, name, employee_id, position').order('name').then(({ data }) => {
-            setWorkers(data || []);
-        });
+        let isMounted = true;
+        
+        const loadWorkers = async () => {
+            try {
+                const { data, error } = await supabase.from('workers').select('id, name, employee_id, position').order('name');
+                if (error) throw error;
+                if (isMounted) {
+                    setWorkers(data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load workers:', err);
+            }
+        };
+        
+        loadWorkers();
+        
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const generateDTR = async () => {
@@ -946,9 +980,25 @@ function PayrollTab() {
     const [savingAdj, setSavingAdj] = useState(false);
 
     useEffect(() => {
-        supabase.from('workers').select('id, name, employee_id, position, daily_rate').eq('status', 'active').order('name').then(({ data }) => {
-            setWorkers(data || []);
-        });
+        let isMounted = true;
+        
+        const loadWorkers = async () => {
+            try {
+                const { data, error } = await supabase.from('workers').select('id, name, employee_id, position, daily_rate').eq('status', 'active').order('name');
+                if (error) throw error;
+                if (isMounted) {
+                    setWorkers(data || []);
+                }
+            } catch (err) {
+                console.error('Failed to load workers:', err);
+            }
+        };
+        
+        loadWorkers();
+        
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const generatePayroll = async () => {

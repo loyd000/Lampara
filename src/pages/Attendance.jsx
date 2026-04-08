@@ -417,16 +417,22 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     // After cameraActive=true the <video> element is in the DOM — now attach stream
     useEffect(() => {
         if (!cameraActive || !streamRef.current || !videoRef.current) return;
+        
         const video = videoRef.current;
         video.srcObject = streamRef.current;
+        
         const setup = () => {
             video.play().catch(() => {});
             setCaptureStatus('Look straight at the camera, then click Capture');
             startLoop();
         };
-        if (video.readyState >= 1) setup();
-        else video.onloadedmetadata = setup;
-    }, [cameraActive]); // eslint-disable-line react-hooks/exhaustive-deps
+        
+        if (video.readyState >= 1) {
+            setup();
+        } else {
+            video.onloadedmetadata = setup;
+        }
+    }, [cameraActive]);
 
     const startLoop = () => {
         const loop = async () => {
@@ -539,7 +545,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
         e.preventDefault();
         setError('');
         if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
-        if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+        if (form.password.length < 10) { setError('Password must be at least 10 characters.'); return; }
         if (!descriptor) { setError('Please capture your face photo first.'); return; }
         setSaving(true);
         try {
@@ -592,7 +598,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
                 </div>
                 <div className="att-field">
                     <label>Password *</label>
-                    <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required placeholder="At least 6 characters" autoComplete="new-password" />
+                    <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required placeholder="At least 10 characters" autoComplete="new-password" />
                 </div>
                 <div className="att-field">
                     <label>Confirm Password *</label>

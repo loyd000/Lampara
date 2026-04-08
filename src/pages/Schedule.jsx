@@ -3,11 +3,11 @@ import { supabase } from '../lib/supabase.js';
 import './Schedule.css';
 
 // ============================================================
-// EmailJS — Replace these with your actual credentials
+// EmailJS Credentials from Environment Variables
 // ============================================================
-const EMAILJS_SERVICE_ID      = 'service_lampara';
-const EMAILJS_COMPANY_TPL     = 'template_booking_company'; // notifies lamparaeis@gmail.com
-const EMAILJS_PUBLIC_KEY      = '_rgBAjoEUDIAq9fGO';
+const EMAILJS_SERVICE_ID      = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_COMPANY_TPL     = import.meta.env.VITE_EMAILJS_BOOKING_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY      = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 // ============================================================
 
 const MONTH_NAMES = [

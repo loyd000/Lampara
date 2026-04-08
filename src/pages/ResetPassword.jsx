@@ -61,8 +61,8 @@ export default function ResetPassword() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                minLength={6}
-                                placeholder="Min. 6 characters"
+                                minLength={10}
+                                placeholder="Min. 10 characters"
                             />
                         </div>
 

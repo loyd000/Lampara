@@ -145,6 +145,7 @@ function Dashboard({ user }) {
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(false);
     const [editing, setEditing] = useState(null);
+    const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, title }
 
     const loadProjects = async () => {
         setLoading(true);
@@ -164,25 +165,38 @@ function Dashboard({ user }) {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this project and all its photos?')) return;
-
+        // Show confirmation modal instead of window.confirm
+        const project = projects.find((p) => p.id === id);
+        setDeleteConfirm({ id, title: project?.title || 'this project' });
+    };
+    
+    const confirmDelete = async () => {
+        if (!deleteConfirm) return;
+        
+        const id = deleteConfirm.id;
         const project = projects.find((p) => p.id === id);
         const photos = project?.project_photos || [];
+        
+        try {
+            // Delete photos from storage
+            if (photos.length > 0) {
+                await supabase.storage
+                    .from('project-images')
+                    .remove(photos.map((p) => p.storage_path));
+            }
 
-        // Delete photos from storage
-        if (photos.length > 0) {
-            await supabase.storage
-                .from('project-images')
-                .remove(photos.map((p) => p.storage_path));
+            // Delete photo records
+            await supabase.from('project_photos').delete().eq('project_id', id);
+
+            // Delete project
+            await supabase.from('projects').delete().eq('id', id);
+
+            loadProjects();
+            setDeleteConfirm(null);
+        } catch (err) {
+            console.error('Delete failed:', err);
+            alert('Failed to delete project: ' + err.message);
         }
-
-        // Delete photo records
-        await supabase.from('project_photos').delete().eq('project_id', id);
-
-        // Delete project
-        await supabase.from('projects').delete().eq('id', id);
-
-        loadProjects();
     };
 
     const openEdit = (project) => {
@@ -281,6 +295,41 @@ function Dashboard({ user }) {
                     onClose={() => { setModal(false); setEditing(null); }}
                     onSaved={() => { setModal(false); setEditing(null); loadProjects(); }}
                 />
+            )}
+            
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000
+                }} onClick={() => setDeleteConfirm(null)}>
+                    <div style={{
+                        background: 'white', padding: '2rem', borderRadius: '8px', maxWidth: '400px',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+                    }} onClick={(e) => e.stopPropagation()}>
+                        <h3 style={{ marginTop: 0, color: 'var(--navy)' }}>Confirm Deletion</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            Are you sure you want to delete <strong>"{deleteConfirm.title}"</strong> and all its photos? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() => setDeleteConfirm(null)}
+                                style={{ padding: '0.5rem 1rem' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn"
+                                onClick={confirmDelete}
+                                style={{ padding: '0.5rem 1rem', background: 'var(--error)', color: 'white', border: 'none' }}
+                            >
+                                Delete Permanently
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
