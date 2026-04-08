@@ -1,9 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '../lib/supabase.js';
 import Lightbox from '../components/Lightbox.jsx';
 import './Gallery.css';
 
 const FILTERS = ['all', 'residential', 'commercial', 'industrial'];
+
+const GalleryCard = memo(({ project, index, onOpen }) => {
+    const getImageUrls = (proj) => {
+        const photos = [...(proj.project_photos || [])].sort(
+            (a, b) => a.order_index - b.order_index
+        );
+        return photos.map(
+            (p) =>
+                supabase.storage
+                    .from('project-images')
+                    .getPublicUrl(p.storage_path).data.publicUrl
+        );
+    };
+
+    const getCover = (proj) => {
+        const urls = getImageUrls(proj);
+        return urls[0] ? `${urls[0]}?width=600&resize=cover` : null;
+    };
+
+    const coverUrl = getCover(project);
+    const photoCount = (project.project_photos || []).length;
+
+    return (
+        <div
+            className="gallery-card"
+            onClick={() => onOpen(project)}
+            data-aos="zoom-in"
+            data-aos-delay={index * 50}
+        >
+            <div className="gallery-card__img">
+                {coverUrl && (
+                    <img src={coverUrl} alt={project.title} loading="lazy" />
+                )}
+                <div className="gallery-card__overlay">
+                    <span className="gallery-card__count">
+                        {photoCount} {photoCount === 1 ? 'Photo' : 'Photos'}
+                    </span>
+                </div>
+            </div>
+            <div className="gallery-card__info">
+                <h3>{project.title}</h3>
+                <p className="gallery-card__specs">{project.specs}</p>
+                <p className="gallery-card__location">{project.location}</p>
+            </div>
+        </div>
+    );
+});
+
+GalleryCard.displayName = 'GalleryCard';
 
 export default function Gallery() {
     const [projects, setProjects] = useState([]);
@@ -47,10 +96,11 @@ export default function Gallery() {
         return urls[0] ? `${urls[0]}?width=600&resize=cover` : null;
     };
 
-    const filtered =
-        filter === 'all'
+    const filtered = useMemo(() => {
+        return filter === 'all'
             ? projects
             : projects.filter((p) => p.category === filter);
+    }, [filter, projects]);
 
     const openLightbox = (project) => {
         const images = getImageUrls(project);
@@ -108,36 +158,14 @@ export default function Gallery() {
                         ) : filtered.length === 0 ? (
                             <p className="gallery-empty">No projects found.</p>
                         ) : (
-                            filtered.map((project, idx) => {
-                                const coverUrl = getCover(project);
-                                const photoCount = (project.project_photos || []).length;
-
-                                return (
-                                    <div
-                                        key={project.id}
-                                        className="gallery-card"
-                                        onClick={() => openLightbox(project)}
-                                        data-aos="zoom-in"
-                                        data-aos-delay={idx * 50}
-                                    >
-                                        <div className="gallery-card__img">
-                                            {coverUrl && (
-                                                <img src={coverUrl} alt={project.title} loading="lazy" />
-                                            )}
-                                            <div className="gallery-card__overlay">
-                                                <span className="gallery-card__count">
-                                                    {photoCount} {photoCount === 1 ? 'Photo' : 'Photos'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="gallery-card__info">
-                                            <h3>{project.title}</h3>
-                                            <p className="gallery-card__specs">{project.specs}</p>
-                                            <p className="gallery-card__location">{project.location}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })
+                            filtered.map((project, idx) => (
+                                <GalleryCard
+                                    key={project.id}
+                                    project={project}
+                                    index={idx}
+                                    onOpen={openLightbox}
+                                />
+                            ))
                         )}
                     </div>
 
