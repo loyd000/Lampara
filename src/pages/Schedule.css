@@ -1,0 +1,562 @@
+/* ========================================
+   Schedule Page — Mobile-First
+   ======================================== */
+
+/* --- Hero --- */
+.schedule-hero {
+    background: linear-gradient(160deg, #0a192f 0%, #0d2244 100%);
+    padding: calc(var(--nav-height) + var(--sp-12)) 0 var(--sp-12);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.schedule-hero::before {
+    content: '';
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 360px;
+    height: 360px;
+    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.schedule-hero__inner {
+    position: relative;
+    z-index: 1;
+}
+
+.schedule-hero .badge {
+    margin-bottom: var(--sp-4);
+}
+
+.schedule-hero h1 {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: var(--sp-3);
+}
+
+.schedule-hero p {
+    color: rgba(255,255,255,0.6);
+    font-size: 1rem;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+@media (min-width: 640px) {
+    .schedule-hero {
+        padding: calc(var(--nav-height) + var(--sp-16)) 0 var(--sp-16);
+    }
+    .schedule-hero h1 {
+        font-size: 2.5rem;
+    }
+}
+
+/* --- Calendar Card --- */
+.sched-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-5);
+    box-shadow: var(--shadow);
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+    .sched-card {
+        padding: var(--sp-8);
+    }
+}
+
+/* --- Month Navigator --- */
+.sched-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-6);
+    gap: var(--sp-4);
+}
+
+.sched-nav__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -0.03em;
+    text-align: center;
+    flex: 1;
+}
+
+.sched-nav__btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--duration) var(--ease);
+}
+
+.sched-nav__btn:hover {
+    border-color: var(--navy);
+    background: var(--surface-alt);
+}
+
+@media (min-width: 640px) {
+    .sched-nav__title {
+        font-size: 2rem;
+    }
+}
+
+/* --- Grid --- */
+.sched-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+
+.sched-grid--headers {
+    margin-bottom: 3px;
+}
+
+/* Day-of-week header */
+.sched-dow {
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: var(--sp-2) 0;
+}
+
+/* --- Cell base --- */
+.sched-cell {
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    border: 1px solid var(--border-light);
+    padding: 4px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 52px;
+    transition: all var(--duration) var(--ease);
+    overflow: hidden;
+}
+
+.sched-cell--empty {
+    background: transparent;
+    border-color: transparent;
+}
+
+.sched-cell__num {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    align-self: flex-start;
+    line-height: 1;
+}
+
+.sched-cell__body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 2px;
+    width: 100%;
+    text-align: center;
+}
+
+.sched-cell__icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.sched-cell__loc {
+    font-size: 0.5rem;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.2;
+    text-wrap: balance;
+    display: none; /* shown on wider screens */
+}
+
+.sched-cell__hint {
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transition: opacity var(--duration) var(--ease);
+}
+
+/* --- Status variants --- */
+.sched-cell--open {
+    background: rgba(201, 168, 76, 0.1);
+    border-color: rgba(201, 168, 76, 0.25);
+}
+
+.sched-cell--not-available {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+    opacity: 0.75;
+}
+
+.sched-cell--scheduled {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+.sched-cell--pending {
+    background: rgba(251, 146, 60, 0.1);
+    border-color: rgba(251, 146, 60, 0.3);
+}
+
+/* Clickable (open) hover */
+.sched-cell--clickable {
+    cursor: pointer;
+}
+
+.sched-cell--clickable:hover {
+    transform: scale(1.06);
+    box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25);
+    border-color: var(--gold);
+    z-index: 2;
+}
+
+.sched-cell--clickable:hover .sched-cell__hint {
+    opacity: 1;
+}
+
+/* Past days — greyed out */
+.sched-cell--past {
+    opacity: 0.4;
+}
+
+/* Today highlight */
+.sched-cell--today .sched-cell__num {
+    background: var(--navy);
+    color: #fff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+}
+
+/* Wider screens: show location text and bigger icons */
+@media (min-width: 480px) {
+    .sched-cell {
+        min-height: 70px;
+        padding: var(--sp-2);
+    }
+    .sched-cell__num {
+        font-size: 0.8125rem;
+    }
+    .sched-cell__icon {
+        font-size: 1.3rem;
+    }
+    .sched-cell__loc {
+        display: block;
+        font-size: 0.5625rem;
+    }
+    .sched-cell__hint {
+        font-size: 0.5625rem;
+    }
+}
+
+@media (min-width: 640px) {
+    .sched-cell {
+        min-height: 88px;
+        padding: var(--sp-2) var(--sp-2) var(--sp-3);
+    }
+    .sched-cell__num {
+        font-size: 0.875rem;
+    }
+    .sched-cell__icon {
+        font-size: 1.5rem;
+    }
+    .sched-cell__loc {
+        font-size: 0.625rem;
+    }
+    .sched-cell__hint {
+        font-size: 0.625rem;
+    }
+    .sched-cell--today .sched-cell__num {
+        width: 22px;
+        height: 22px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (min-width: 860px) {
+    .sched-cell {
+        min-height: 100px;
+    }
+    .sched-cell__loc {
+        font-size: 0.6875rem;
+    }
+}
+
+/* --- Loading --- */
+.sched-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+/* Spinner (reuse from admin) */
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Legend --- */
+.sched-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3) var(--sp-5);
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--border-light);
+}
+
+.sched-legend__item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.sched-legend__icon {
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sched-legend__icon--open         { background: rgba(201,168,76,0.12);  }
+.sched-legend__icon--not-available { background: rgba(239,68,68,0.1);   }
+.sched-legend__icon--scheduled    { background: rgba(16,185,129,0.12);  }
+.sched-legend__icon--pending      { background: rgba(251,146,60,0.12);  }
+
+.sched-asof {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: var(--sp-3);
+}
+
+/* --- Booking Modal --- */
+.sched-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 22, 40, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-5);
+    animation: fade-in 0.2s ease;
+}
+
+.sched-modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 560px;
+    max-height: 92dvh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: slide-up 0.25s var(--ease);
+}
+
+@keyframes slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.sched-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding: var(--sp-6) var(--sp-6) var(--sp-5);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.sched-modal__header h3 {
+    font-size: 1.25rem;
+    color: var(--navy);
+}
+
+.sched-modal__date {
+    font-size: 0.875rem;
+    color: var(--gold-dim);
+    font-weight: 500;
+    margin-top: var(--sp-1);
+}
+
+.sched-modal__close {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    transition: all var(--duration) var(--ease);
+}
+
+.sched-modal__close:hover {
+    background: var(--surface-alt);
+    color: var(--navy);
+}
+
+.sched-modal__form {
+    padding: var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.sched-modal__actions {
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: flex-end;
+    padding-top: var(--sp-2);
+    flex-wrap: wrap;
+}
+
+/* --- Form fields --- */
+.sched-row {
+    display: grid;
+    gap: var(--sp-4);
+}
+
+@media (min-width: 480px) {
+    .sched-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.sched-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.sched-field label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.sched-optional {
+    font-weight: 400;
+    opacity: 0.65;
+}
+
+.sched-field input,
+.sched-field textarea {
+    width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    min-height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color var(--duration) var(--ease);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.sched-field input:focus,
+.sched-field textarea:focus {
+    border-color: var(--gold);
+}
+
+.sched-field input::placeholder,
+.sched-field textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.sched-field textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.sched-error {
+    font-size: 0.875rem;
+    color: #ef4444;
+    background: rgba(239,68,68,0.07);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-3) var(--sp-4);
+}
+
+/* --- Success Toast --- */
+.sched-toast {
+    position: fixed;
+    bottom: var(--sp-6);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 300;
+    background: var(--navy);
+    color: #fff;
+    padding: var(--sp-3) var(--sp-5);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+    max-width: 90vw;
+    animation: slide-up 0.3s var(--ease);
+}
+
+.sched-toast button {
+    font-size: 1.25rem;
+    color: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+    transition: color var(--duration) var(--ease);
+}
+
+.sched-toast button:hover {
+    color: #fff;
+}

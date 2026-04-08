@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
 import AttendanceTab from './AdminAttendance.jsx';
+import ScheduleTab from './AdminSchedule.jsx';
 import './Admin.css';
 
 export default function Admin() {
@@ -170,6 +171,9 @@ function Dashboard({ user }) {
                     <button className={`admin-tab ${tab === 'gallery' ? 'active' : ''}`} onClick={() => setTab('gallery')}>
                         Gallery
                     </button>
+                    <button className={`admin-tab ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>
+                        Schedule
+                    </button>
                     <button className={`admin-tab ${tab === 'attendance' ? 'active' : ''}`} onClick={() => setTab('attendance')}>
                         Attendance
                     </button>
@@ -224,6 +228,7 @@ function Dashboard({ user }) {
                 )}
 
                 {tab === 'attendance' && <AttendanceTab />}
+                {tab === 'schedule'   && <ScheduleTab />}
             </main>
 
             {modal && (

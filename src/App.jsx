@@ -3,6 +3,7 @@ import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import Gallery from './pages/Gallery.jsx';
+import Schedule from './pages/Schedule.jsx';
 import Admin from './pages/Admin.jsx';
 import Attendance from './pages/Attendance.jsx';
 
@@ -26,6 +27,16 @@ export default function App() {
                         <>
                             <Navbar />
                             <Gallery />
+                            <Footer />
+                        </>
+                    }
+                />
+                <Route
+                    path="/schedule"
+                    element={
+                        <>
+                            <Navbar />
+                            <Schedule />
                             <Footer />
                         </>
                     }
