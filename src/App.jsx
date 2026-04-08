@@ -13,11 +13,17 @@ import ResetPassword from './pages/ResetPassword.jsx';
 
 export default function App() {
     useEffect(() => {
-        AOS.init({
-            duration: 800, // Default animation duration
-            once: true, // Whether animation should happen only once - while scrolling down
-            offset: 100, // Offset (in px) from the original trigger point
-        });
+        // Use a small timeout to ensure React 19 DOM is fully painted
+        const initAos = setTimeout(() => {
+            AOS.init({
+                duration: 800, // Default animation duration
+                once: true, // Whether animation should happen only once - while scrolling down
+                offset: 100, // Offset (in px) from the original trigger point
+            });
+            AOS.refresh();
+        }, 100);
+
+        return () => clearTimeout(initAos);
     }, []);
 
     return (
