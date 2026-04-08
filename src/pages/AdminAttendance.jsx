@@ -100,10 +100,16 @@ function WorkersTab() {
 
     const load = async () => {
         setLoading(true);
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('workers')
             .select('id, name, employee_id, position, email, status, daily_rate, created_at')
             .order('created_at', { ascending: false });
+            
+        if (error) {
+            console.error('Error fetching workers:', error);
+            alert('Failed to load workers from Supabase: ' + error.message);
+        }
+        
         setWorkers(data || []);
         setLoading(false);
     };
@@ -157,7 +163,8 @@ function WorkersTab() {
                     </div>
                     <div className="admin-workers">
                         {pending.map(w => {
-                            const initials = w.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                            const rawName = w.name || 'Unknown Worker';
+                            const initials = rawName.split(' ').map(n => n?.[0] || '').join('').toUpperCase().slice(0, 2);
                             return (
                                 <div key={w.id} className="admin-worker-card" style={{ borderColor: 'rgba(201,168,76,0.25)' }}>
                                     <div className="admin-worker-card__avatar" style={{ background: 'rgba(201,168,76,0.1)', color: 'var(--gold-dim)' }}>
@@ -208,7 +215,8 @@ function WorkersTab() {
             ) : (
                 <div className="admin-workers">
                     {active.map(w => {
-                        const initials = w.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                        const rawName = w.name || 'Unknown Worker';
+                        const initials = rawName.split(' ').map(n => n?.[0] || '').join('').toUpperCase().slice(0, 2);
                         return (
                             <div key={w.id} className="admin-worker-card">
                                 <div className="admin-worker-card__avatar">{initials}</div>
