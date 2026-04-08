@@ -396,7 +396,7 @@ function ProjectModal({ project, onClose, onSaved }) {
                 // Insert
                 const { data, error } = await supabase
                     .from('projects')
-                    .insert({ ...form, order_index: Date.now() })
+                    .insert({ ...form, order_index: Math.floor(Date.now() / 1000) })
                     .select()
                     .single();
                 if (error) throw error;
