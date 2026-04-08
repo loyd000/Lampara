@@ -142,7 +142,21 @@ function Stats() {
 /* ============================
    ABOUT
    ============================ */
+const ABOUT_IMAGES = [
+    { src: '/assets/about/about_img1.jpg', alt: 'Lampara Solar Installation Team' },
+    { src: '/assets/about/about_img2.jpg', alt: 'Lampara Solar Power Solutions' },
+];
+
 function About() {
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setActiveIndex((prev) => (prev + 1) % ABOUT_IMAGES.length);
+        }, 60000); // rotate every 60 seconds
+        return () => clearInterval(timer);
+    }, []);
+
     return (
         <section id="about" className="section">
             <div className="container">
@@ -165,11 +179,17 @@ function About() {
                         </p>
                     </div>
                     <div className="about__image">
-                        <img
-                            src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=450&fit=crop"
-                            alt="Lampara Solar Installation Team"
-                            loading="lazy"
-                        />
+                        <div className="about__slideshow">
+                            {ABOUT_IMAGES.map((img, i) => (
+                                <img
+                                    key={img.src}
+                                    src={img.src}
+                                    alt={img.alt}
+                                    loading="lazy"
+                                    className={`about__slide-img ${i === activeIndex ? 'about__slide-img--active' : ''}`}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
