@@ -8,7 +8,7 @@ export default function Home() {
             <Hero />
             <Stats />
             <About />
-            <Packages />
+            {/* <Packages /> */}
             <Installations />
             <SolarInfo />
             <Calculator />
@@ -86,7 +86,7 @@ function Hero() {
                     Premium hybrid systems backed by 25-year warranty.
                 </p>
                 <div className="hero__actions">
-                    <a href="#packages" className="btn btn-gold btn-lg">View Packages</a>
+                    {/* <a href="#packages" className="btn btn-gold btn-lg">View Packages</a> */}
                     <a href="#contact" className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}>
                         Get Free Quote
                     </a>

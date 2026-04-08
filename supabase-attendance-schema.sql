@@ -89,13 +89,15 @@ RETURNS TABLE(
     "position" text,
     face_descriptor float8[],
     face_descriptor_mobile float8[],
-    status text
+    status text,
+    daily_rate numeric
 )
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
     RETURN QUERY
         SELECT w.id, w.name, w.employee_id, w.position,
-               w.face_descriptor, w.face_descriptor_mobile, w.status
+               w.face_descriptor, w.face_descriptor_mobile, w.status,
+               w.daily_rate
         FROM workers w
         WHERE w.email = lower(trim(p_email))
           AND w.password_hash = p_password_hash;
@@ -117,9 +119,50 @@ END;
 $$;
 
 -- ============================================================
+-- Daily rate for payroll (run this ALTER on existing DB)
+-- ============================================================
+ALTER TABLE workers ADD COLUMN IF NOT EXISTS daily_rate numeric DEFAULT 0;
+
+-- ============================================================
+-- Attendance log type: regular vs overtime
+-- ============================================================
+ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS type text DEFAULT 'regular'
+    CHECK (type IN ('regular', 'overtime'));
+
+-- ============================================================
+-- Payroll adjustments — one row per worker per pay period
+-- Admin manually enters these values each month.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS payroll_adjustments (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    worker_id uuid REFERENCES workers(id) ON DELETE CASCADE,
+    month text NOT NULL,  -- format: 'YYYY-MM', e.g. '2025-02'
+    sss numeric DEFAULT 0,
+    philhealth numeric DEFAULT 0,
+    pagibig numeric DEFAULT 0,
+    cash_advance_deduction numeric DEFAULT 0,
+    cash_advance_balance numeric DEFAULT 0,
+    loans numeric DEFAULT 0,
+    tax numeric DEFAULT 0,
+    incentives numeric DEFAULT 0,
+    night_differential numeric DEFAULT 0,
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(worker_id, month)
+);
+
+ALTER TABLE payroll_adjustments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "admin_all_payroll_adjustments" ON payroll_adjustments
+    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "anon_read_payroll_adjustments" ON payroll_adjustments
+    FOR SELECT TO anon USING (true);
+
+-- ============================================================
 -- Indexes for performance
 -- ============================================================
 
 CREATE INDEX IF NOT EXISTS idx_attendance_logs_worker_id ON attendance_logs(worker_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_logs_date ON attendance_logs(date);
 CREATE INDEX IF NOT EXISTS idx_attendance_logs_logged_at ON attendance_logs(logged_at);
+CREATE INDEX IF NOT EXISTS idx_payroll_adjustments_worker_month ON payroll_adjustments(worker_id, month);

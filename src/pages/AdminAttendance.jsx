@@ -47,7 +47,7 @@ async function hashPassword(password) {
 export default function AttendanceTab() {
     const [cvReady, setCvReady] = useState(false);
     const [modelError, setModelError] = useState('');
-    const [subTab, setSubTab] = useState('workers'); // workers | logs | dtr
+    const [subTab, setSubTab] = useState('workers'); // workers | logs | dtr | payroll
 
     useEffect(() => {
         loadOpenCV()
@@ -58,13 +58,13 @@ export default function AttendanceTab() {
     return (
         <div>
             <div className="admin-tabs" style={{ marginBottom: 'var(--sp-5)' }}>
-                {['workers', 'logs', 'dtr'].map((t) => (
+                {['workers', 'logs', 'dtr', 'payroll'].map((t) => (
                     <button
                         key={t}
                         className={`admin-tab ${subTab === t ? 'active' : ''}`}
                         onClick={() => setSubTab(t)}
                     >
-                        {t === 'workers' ? 'Workers' : t === 'logs' ? 'Attendance Logs' : 'DTR'}
+                        {t === 'workers' ? 'Workers' : t === 'logs' ? 'Attendance Logs' : t === 'dtr' ? 'DTR' : 'Payroll'}
                     </button>
                 ))}
             </div>
@@ -82,6 +82,7 @@ export default function AttendanceTab() {
                     {subTab === 'workers' && <WorkersTab />}
                     {subTab === 'logs' && <LogsTab />}
                     {subTab === 'dtr' && <DTRTab />}
+                    {subTab === 'payroll' && <PayrollTab />}
                 </>
             )}
         </div>
@@ -101,7 +102,7 @@ function WorkersTab() {
         setLoading(true);
         const { data } = await supabase
             .from('workers')
-            .select('id, name, employee_id, position, email, status, created_at')
+            .select('id, name, employee_id, position, email, status, daily_rate, created_at')
             .order('created_at', { ascending: false });
         setWorkers(data || []);
         setLoading(false);
@@ -127,7 +128,13 @@ function WorkersTab() {
     const handleDelete = async (id, name) => {
         if (!window.confirm(`Remove worker "${name}" and all their attendance records?`)) return;
         await supabase.from('attendance_logs').delete().eq('worker_id', id);
+        await supabase.from('payroll_adjustments').delete().eq('worker_id', id);
         await supabase.from('workers').delete().eq('id', id);
+        load();
+    };
+
+    const handleUpdateRate = async (id, rate) => {
+        await supabase.from('workers').update({ daily_rate: rate }).eq('id', id);
         load();
     };
 
@@ -208,8 +215,23 @@ function WorkersTab() {
                                 <div className="admin-worker-card__info">
                                     <h3>{w.name}</h3>
                                     <p>ID: {w.employee_id} {w.position ? `· ${w.position}` : ''}</p>
+                                    <p style={{ fontSize: '0.75rem', color: 'var(--gold-dim)', marginTop: 2 }}>
+                                        Rate: ₱{(w.daily_rate || 0).toLocaleString()}/day
+                                    </p>
                                 </div>
-                                <div className="admin-worker-card__actions">
+                                <div className="admin-worker-card__actions" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>₱</span>
+                                        <input
+                                            type="number"
+                                            defaultValue={w.daily_rate || 0}
+                                            min="0"
+                                            step="0.01"
+                                            style={{ width: 80, fontSize: '0.8rem', padding: '4px 6px' }}
+                                            onBlur={(e) => handleUpdateRate(w.id, parseFloat(e.target.value) || 0)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                                        />
+                                    </div>
                                     <button
                                         className="btn btn-outline"
                                         style={{ color: 'var(--error)', borderColor: 'var(--error)', fontSize: '0.8125rem', minHeight: 36, padding: '6px 14px' }}
@@ -238,7 +260,7 @@ function WorkersTab() {
    Register Worker Modal — face capture + form
    ============================================================ */
 function RegisterWorkerModal({ onClose, onSaved }) {
-    const [form, setForm] = useState({ name: '', employee_id: '', position: '', email: '', password: '' });
+    const [form, setForm] = useState({ name: '', employee_id: '', position: '', email: '', password: '', daily_rate: '' });
     const [descriptor, setDescriptor] = useState(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -351,6 +373,7 @@ function RegisterWorkerModal({ onClose, onSaved }) {
                 email: form.email.toLowerCase().trim(),
                 password_hash: hash,
                 face_descriptor: descriptor,
+                daily_rate: parseFloat(form.daily_rate) || 0,
                 status: 'active',
             });
             if (err) throw err;
@@ -413,6 +436,17 @@ function RegisterWorkerModal({ onClose, onSaved }) {
                             onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                             required
                             placeholder="At least 6 characters"
+                        />
+                    </div>
+                    <div className="admin-field">
+                        <label>Daily Rate (₱)</label>
+                        <input
+                            type="number"
+                            value={form.daily_rate}
+                            onChange={e => setForm(f => ({ ...f, daily_rate: e.target.value }))}
+                            placeholder="e.g., 700"
+                            min="0"
+                            step="0.01"
                         />
                     </div>
 
@@ -824,6 +858,372 @@ function DTRTab() {
 
             {!dtrData && !loading && (
                 <p className="admin-empty">Select a worker and month, then click Generate DTR.</p>
+            )}
+        </div>
+    );
+}
+
+/* ============================================================
+   Payroll Tab
+   ============================================================ */
+function PayrollTab() {
+    const [workers, setWorkers] = useState([]);
+    const [selectedMonth, setSelectedMonth] = useState(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [payrollData, setPayrollData] = useState(null);
+    const [adjustments, setAdjustments] = useState({});  // { workerId: { sss, philhealth, ... } }
+    const [loading, setLoading] = useState(false);
+    const [editingWorkerId, setEditingWorkerId] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [savingAdj, setSavingAdj] = useState(false);
+
+    useEffect(() => {
+        supabase.from('workers').select('id, name, employee_id, position, daily_rate').eq('status', 'active').order('name').then(({ data }) => {
+            setWorkers(data || []);
+        });
+    }, []);
+
+    const generatePayroll = async () => {
+        if (!selectedMonth) return;
+        setLoading(true);
+
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+        const monthStr = selectedMonth;
+
+        // Fetch all attendance logs for the month
+        const { data: logs } = await supabase
+            .from('attendance_logs')
+            .select('worker_id, action, logged_at, date, type')
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('logged_at', { ascending: true });
+
+        // Fetch adjustments for this month
+        const { data: adjData } = await supabase
+            .from('payroll_adjustments')
+            .select('*')
+            .eq('month', monthStr);
+
+        const adjMap = {};
+        (adjData || []).forEach(a => { adjMap[a.worker_id] = a; });
+        setAdjustments(adjMap);
+
+        // Process per worker
+        const rows = workers.map(w => {
+            const workerLogs = (logs || []).filter(l => l.worker_id === w.id);
+            const rate = w.daily_rate || 0;
+
+            // Group logs by date
+            const byDate = {};
+            workerLogs.forEach(l => {
+                if (!byDate[l.date]) byDate[l.date] = [];
+                byDate[l.date].push(l);
+            });
+
+            let daysPresent = 0;
+            let regularHours = 0;
+            let otHours = 0;
+
+            Object.values(byDate).forEach(dayLogs => {
+                const regIn = dayLogs.find(l => l.action === 'time_in' && (l.type === 'regular' || !l.type));
+                const regOut = dayLogs.find(l => l.action === 'time_out' && (l.type === 'regular' || !l.type));
+                const otIn = dayLogs.find(l => l.action === 'time_in' && l.type === 'overtime');
+                const otOut = dayLogs.find(l => l.action === 'time_out' && l.type === 'overtime');
+
+                if (regIn) daysPresent++;
+
+                if (regIn && regOut) {
+                    const diff = (new Date(regOut.logged_at) - new Date(regIn.logged_at)) / (1000 * 60 * 60);
+                    regularHours += Math.min(diff, 8);
+                }
+
+                if (otIn && otOut) {
+                    const diff = (new Date(otOut.logged_at) - new Date(otIn.logged_at)) / (1000 * 60 * 60);
+                    otHours += Math.max(0, diff);
+                }
+            });
+
+            const salary = rate * daysPresent;
+            const hourlyRate = rate / 8;
+            const otPay = hourlyRate * 1.25 * otHours;
+
+            const adj = adjMap[w.id] || {};
+
+            const nightDiff = adj.night_differential || 0;
+            const incentives = adj.incentives || 0;
+            const sss = adj.sss || 0;
+            const philhealth = adj.philhealth || 0;
+            const pagibig = adj.pagibig || 0;
+            const cashAdvanceDeduction = adj.cash_advance_deduction || 0;
+            const cashAdvanceBalance = adj.cash_advance_balance || 0;
+            const loans = adj.loans || 0;
+            const tax = adj.tax || 0;
+
+            const totalDeductions = sss + philhealth + pagibig + cashAdvanceDeduction + loans + tax;
+            const totalSalary = salary + otPay + nightDiff + incentives - totalDeductions;
+
+            return {
+                ...w,
+                daysPresent,
+                regularHours: regularHours.toFixed(2),
+                otHours: otHours.toFixed(2),
+                salary,
+                otPay,
+                nightDiff,
+                incentives,
+                sss,
+                philhealth,
+                pagibig,
+                cashAdvanceDeduction,
+                cashAdvanceBalance,
+                loans,
+                tax,
+                totalDeductions,
+                totalSalary,
+            };
+        });
+
+        setPayrollData(rows);
+        setLoading(false);
+    };
+
+    const openAdjEditor = (workerId) => {
+        const adj = adjustments[workerId] || {};
+        setEditForm({
+            sss: adj.sss || 0,
+            philhealth: adj.philhealth || 0,
+            pagibig: adj.pagibig || 0,
+            cash_advance_deduction: adj.cash_advance_deduction || 0,
+            cash_advance_balance: adj.cash_advance_balance || 0,
+            loans: adj.loans || 0,
+            tax: adj.tax || 0,
+            incentives: adj.incentives || 0,
+            night_differential: adj.night_differential || 0,
+        });
+        setEditingWorkerId(workerId);
+    };
+
+    const saveAdjustment = async () => {
+        setSavingAdj(true);
+        const payload = {
+            worker_id: editingWorkerId,
+            month: selectedMonth,
+            ...editForm,
+        };
+        // Upsert
+        const { error } = await supabase
+            .from('payroll_adjustments')
+            .upsert(payload, { onConflict: 'worker_id,month' });
+        if (!error) {
+            setAdjustments(prev => ({ ...prev, [editingWorkerId]: { ...prev[editingWorkerId], ...payload } }));
+            setEditingWorkerId(null);
+            // Regenerate
+            generatePayroll();
+        }
+        setSavingAdj(false);
+    };
+
+    const monthLabel = selectedMonth
+        ? new Date(selectedMonth + '-01').toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })
+        : '';
+
+    const peso = (v) => '₱' + (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const exportCSV = () => {
+        if (!payrollData) return;
+        const headers = [
+            'Employee Name', 'Employee ID', 'Month/Year', 'Salary', 'Overtime',
+            'Night Differential', 'Incentives', 'SSS', 'PhilHealth', 'Pag-IBIG',
+            'Cash Advance Deduction', 'CA Remaining Balance', 'Loans', 'Tax',
+            'Rate Per Day', 'Days Worked', 'Total Salary'
+        ];
+        const rows = payrollData.map(r => [
+            r.name, r.employee_id, monthLabel, r.salary.toFixed(2), r.otPay.toFixed(2),
+            r.nightDiff.toFixed(2), r.incentives.toFixed(2), r.sss.toFixed(2),
+            r.philhealth.toFixed(2), r.pagibig.toFixed(2), r.cashAdvanceDeduction.toFixed(2),
+            r.cashAdvanceBalance.toFixed(2), r.loans.toFixed(2), r.tax.toFixed(2),
+            (r.daily_rate || 0).toFixed(2), r.daysPresent, r.totalSalary.toFixed(2),
+        ]);
+        downloadCSV(`Payroll-${selectedMonth}.csv`, headers, rows);
+    };
+
+    return (
+        <div>
+            <div className="dtr-controls no-print">
+                <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}>
+                    {Array.from({ length: 12 }, (_, i) => {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() - i);
+                        const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        const label = d.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+                        return <option key={val} value={val}>{label}</option>;
+                    })}
+                </select>
+                <button
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.875rem', flex: '0 0 auto' }}
+                    onClick={generatePayroll}
+                    disabled={loading}
+                >
+                    {loading ? 'Loading…' : 'Generate Payroll'}
+                </button>
+                {payrollData && (
+                    <>
+                        <button className="btn btn-outline" style={{ fontSize: '0.875rem', flex: '0 0 auto' }} onClick={exportCSV}>
+                            Export CSV
+                        </button>
+                        <button className="btn btn-outline" style={{ fontSize: '0.875rem', flex: '0 0 auto' }} onClick={() => window.print()}>
+                            Print / PDF
+                        </button>
+                    </>
+                )}
+            </div>
+
+            {payrollData && (
+                <>
+                    <div className="dtr-header" style={{ marginBottom: 'var(--sp-4)' }}>
+                        <h3>Payroll — {monthLabel}</h3>
+                    </div>
+
+                    <div className="att-table-wrap" style={{ overflowX: 'auto' }}>
+                        <table className="att-log-table" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                            <thead>
+                                <tr>
+                                    <th>Employee Name</th>
+                                    <th>Employee ID</th>
+                                    <th>Rate/Day</th>
+                                    <th>Days</th>
+                                    <th>Salary</th>
+                                    <th>OT Hours</th>
+                                    <th>OT Pay</th>
+                                    <th>Night Diff</th>
+                                    <th>Incentives</th>
+                                    <th>SSS</th>
+                                    <th>PhilHealth</th>
+                                    <th>Pag-IBIG</th>
+                                    <th>CA Deduction</th>
+                                    <th>CA Balance</th>
+                                    <th>Loans</th>
+                                    <th>Tax</th>
+                                    <th style={{ fontWeight: 700 }}>Total Salary</th>
+                                    <th className="no-print">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {payrollData.map(r => (
+                                    <tr key={r.id}>
+                                        <td style={{ fontWeight: 500 }}>{r.name}</td>
+                                        <td>{r.employee_id}</td>
+                                        <td>{peso(r.daily_rate)}</td>
+                                        <td>{r.daysPresent}</td>
+                                        <td>{peso(r.salary)}</td>
+                                        <td>{r.otHours}</td>
+                                        <td>{peso(r.otPay)}</td>
+                                        <td>{peso(r.nightDiff)}</td>
+                                        <td>{peso(r.incentives)}</td>
+                                        <td style={{ color: 'var(--error)' }}>{peso(r.sss)}</td>
+                                        <td style={{ color: 'var(--error)' }}>{peso(r.philhealth)}</td>
+                                        <td style={{ color: 'var(--error)' }}>{peso(r.pagibig)}</td>
+                                        <td style={{ color: 'var(--error)' }}>{peso(r.cashAdvanceDeduction)}</td>
+                                        <td>{peso(r.cashAdvanceBalance)}</td>
+                                        <td style={{ color: 'var(--error)' }}>{peso(r.loans)}</td>
+                                        <td style={{ color: 'var(--error)' }}>{peso(r.tax)}</td>
+                                        <td style={{ fontWeight: 700, color: r.totalSalary >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                                            {peso(r.totalSalary)}
+                                        </td>
+                                        <td className="no-print">
+                                            <button
+                                                className="btn btn-outline"
+                                                style={{ fontSize: '0.7rem', minHeight: 28, padding: '2px 8px' }}
+                                                onClick={() => openAdjEditor(r.id)}
+                                            >
+                                                Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot>
+                                <tr style={{ fontWeight: 700 }}>
+                                    <td colSpan="4" style={{ textAlign: 'right' }}>Totals:</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.salary, 0))}</td>
+                                    <td>{payrollData.reduce((s, r) => s + parseFloat(r.otHours), 0).toFixed(2)}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.otPay, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.nightDiff, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.incentives, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.sss, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.philhealth, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.pagibig, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.cashAdvanceDeduction, 0))}</td>
+                                    <td></td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.loans, 0))}</td>
+                                    <td>{peso(payrollData.reduce((s, r) => s + r.tax, 0))}</td>
+                                    <td style={{ color: 'var(--success)' }}>
+                                        {peso(payrollData.reduce((s, r) => s + r.totalSalary, 0))}
+                                    </td>
+                                    <td className="no-print"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </>
+            )}
+
+            {!payrollData && !loading && (
+                <p className="admin-empty">Select a month and click Generate Payroll.</p>
+            )}
+
+            {/* Adjustment Editor Modal */}
+            {editingWorkerId && (
+                <div className="admin-modal-overlay" onClick={() => setEditingWorkerId(null)}>
+                    <div className="admin-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+                        <div className="admin-modal__header">
+                            <h2 style={{ fontSize: '1rem' }}>
+                                Adjustments — {workers.find(w => w.id === editingWorkerId)?.name}
+                            </h2>
+                            <button className="admin-modal__close" onClick={() => setEditingWorkerId(null)}>&times;</button>
+                        </div>
+                        <div className="admin-modal__form" style={{ padding: 'var(--sp-4)' }}>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 'var(--sp-4)' }}>
+                                {monthLabel} — Enter amounts manually
+                            </p>
+                            {[
+                                { key: 'sss', label: 'SSS' },
+                                { key: 'philhealth', label: 'PhilHealth' },
+                                { key: 'pagibig', label: 'Pag-IBIG' },
+                                { key: 'incentives', label: 'Incentives' },
+                                { key: 'night_differential', label: 'Night Differential' },
+                                { key: 'cash_advance_deduction', label: 'Cash Advance Deduction' },
+                                { key: 'cash_advance_balance', label: 'CA Remaining Balance' },
+                                { key: 'loans', label: 'Loans' },
+                                { key: 'tax', label: 'Tax' },
+                            ].map(({ key, label }) => (
+                                <div className="admin-field" key={key} style={{ marginBottom: 'var(--sp-2)' }}>
+                                    <label style={{ fontSize: '0.8rem' }}>{label}</label>
+                                    <input
+                                        type="number"
+                                        value={editForm[key]}
+                                        onChange={e => setEditForm(f => ({ ...f, [key]: parseFloat(e.target.value) || 0 }))}
+                                        min="0"
+                                        step="0.01"
+                                        style={{ fontSize: '0.85rem' }}
+                                    />
+                                </div>
+                            ))}
+                            <div className="admin-modal__actions" style={{ marginTop: 'var(--sp-4)' }}>
+                                <button type="button" className="btn btn-outline" onClick={() => setEditingWorkerId(null)}>Cancel</button>
+                                <button className="btn btn-primary" onClick={saveAdjustment} disabled={savingAdj}>
+                                    {savingAdj ? 'Saving…' : 'Save Adjustments'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -29,7 +29,7 @@ export default function Navbar() {
         ? [
             { label: 'Home', href: '#home' },
             { label: 'About', href: '#about' },
-            { label: 'Packages', href: '#packages' },
+            // { label: 'Packages', href: '#packages' },
             { label: 'Gallery', to: '/gallery' },
             { label: 'Solar Info', href: '#solar-info' },
             { label: 'Contact', href: '#contact' },
@@ -37,7 +37,7 @@ export default function Navbar() {
         : [
             { label: 'Home', to: '/' },
             { label: 'About', to: '/#about' },
-            { label: 'Packages', to: '/#packages' },
+            // { label: 'Packages', to: '/#packages' },
             { label: 'Gallery', to: '/gallery' },
             { label: 'Solar Info', to: '/#solar-info' },
             { label: 'Contact', to: '/#contact' },

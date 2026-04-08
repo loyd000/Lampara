@@ -57,19 +57,45 @@ export default function Attendance() {
             .catch(err => setModelError('Failed to load OpenCV: ' + err.message));
     }, []);
 
+    const [pendingOT, setPendingOT] = useState(false);
+
+    // Auto clock-out: close any open clock-in older than 8 hours
+    const autoClockOut = async (workerId) => {
+        const { data: last } = await supabase
+            .from('attendance_logs')
+            .select('id, action, logged_at, type')
+            .eq('worker_id', workerId)
+            .order('logged_at', { ascending: false })
+            .limit(1);
+        const entry = last?.[0];
+        if (!entry || entry.action !== 'time_in') return entry || null;
+
+        const elapsed = Date.now() - new Date(entry.logged_at).getTime();
+        const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+        if (elapsed > EIGHT_HOURS) {
+            const autoOutTime = new Date(new Date(entry.logged_at).getTime() + EIGHT_HOURS);
+            await supabase.from('attendance_logs').insert({
+                worker_id: workerId,
+                action: 'time_out',
+                type: entry.type || 'regular',
+                logged_at: autoOutTime.toISOString(),
+                date: autoOutTime.toISOString().split('T')[0],
+            });
+            // Return the newly inserted time_out as last action
+            return { action: 'time_out', logged_at: autoOutTime.toISOString(), type: entry.type || 'regular' };
+        }
+        return entry;
+    };
+
     const handleLogin = async (worker) => {
         if (worker.__statusRedirect) {
             setScreen(worker.__statusRedirect);
             return;
         }
-        const { data } = await supabase
-            .from('attendance_logs')
-            .select('action, logged_at')
-            .eq('worker_id', worker.id)
-            .order('logged_at', { ascending: false })
-            .limit(1);
+        const lastEntry = await autoClockOut(worker.id);
         setCurrentWorker(worker);
-        setLastAction(data?.[0] || null);
+        setLastAction(lastEntry);
+        setPendingOT(false);
         setScreen('welcome');
     };
 
@@ -77,17 +103,23 @@ export default function Attendance() {
         setScreen('confirm');
     }, []);
 
-    const handleRecord = async (action) => {
+    const handleRecord = async (action, type = 'regular') => {
         const { error } = await supabase.from('attendance_logs').insert({
             worker_id: currentWorker.id,
             action,
+            type,
             logged_at: new Date().toISOString(),
             date: new Date().toISOString().split('T')[0],
         });
         if (!error) {
-            setSuccessData({ worker: currentWorker, action, time: new Date() });
+            setSuccessData({ worker: currentWorker, action, time: new Date(), type });
             setScreen('success');
         }
+    };
+
+    const handleStartOT = () => {
+        setPendingOT(true);
+        setScreen('camera'); // face scan again for OT
     };
 
     const logout = () => {
@@ -100,12 +132,13 @@ export default function Attendance() {
     const handleDone = async () => {
         const { data } = await supabase
             .from('attendance_logs')
-            .select('action, logged_at')
+            .select('action, logged_at, type')
             .eq('worker_id', currentWorker.id)
             .order('logged_at', { ascending: false })
             .limit(1);
         setLastAction(data?.[0] || null);
         setSuccessData(null);
+        setPendingOT(false);
         setScreen('welcome');
     };
 
@@ -182,7 +215,9 @@ export default function Attendance() {
                     <ConfirmScreen
                         worker={currentWorker}
                         lastAction={lastAction}
+                        pendingOT={pendingOT}
                         onRecord={handleRecord}
+                        onStartOT={handleStartOT}
                         onRetry={() => setScreen('camera')}
                     />
                 )}
@@ -719,20 +754,49 @@ function CameraScreen({ worker, onVerified, onCancel }) {
 }
 
 /* ============================================================
-   Confirm Screen
+   Confirm Screen — enforces clock-in/out rules + OT
    ============================================================ */
-function ConfirmScreen({ worker, lastAction, onRecord, onRetry }) {
+function ConfirmScreen({ worker, lastAction, pendingOT, onRecord, onStartOT, onRetry }) {
     const [submitting, setSubmitting] = useState(false);
     const initials = worker.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+    // Determine state
+    const isClockedIn = lastAction?.action === 'time_in';
+    const isClockedOut = lastAction?.action === 'time_out' || !lastAction;
+    const lastType = lastAction?.type || 'regular';
+
     const lastActionText = lastAction
-        ? `Last: ${lastAction.action === 'time_in' ? 'Clocked In' : 'Clocked Out'} at ${new Date(lastAction.logged_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+        ? `Last: ${lastAction.action === 'time_in' ? 'Clocked In' : 'Clocked Out'}${lastType === 'overtime' ? ' (OT)' : ''} at ${new Date(lastAction.logged_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })}`
         : 'No previous record today';
 
-    const handle = async (action) => {
+    const handle = async (action, type = 'regular') => {
         setSubmitting(true);
-        await onRecord(action);
+        await onRecord(action, type);
         setSubmitting(false);
     };
+
+    // If we arrived here after an OT face scan
+    if (pendingOT) {
+        return (
+            <div className="att-confirm">
+                <div className="att-confirm__avatar">{initials}</div>
+                <div className="att-confirm__name">{worker.name}</div>
+                <div className="att-confirm__role">{worker.position || 'Worker'}</div>
+                <div className="att-confirm__id">ID: {worker.employee_id}</div>
+                <div className="att-confirm__last" style={{ color: 'var(--gold)' }}>Overtime Clock In</div>
+                <div className="att-confirm__actions">
+                    <button className="att-btn-timein" onClick={() => handle('time_in', 'overtime')} disabled={submitting} style={{ width: '100%' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0 0V8m0 4h4m-4 0H8M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                        </svg>
+                        Start Overtime
+                        <span className="att-btn-sub">OT Rate: 125%</span>
+                    </button>
+                </div>
+                <button className="att-btn-secondary" onClick={onRetry}>Re-scan face</button>
+            </div>
+        );
+    }
 
     return (
         <div className="att-confirm">
@@ -742,22 +806,33 @@ function ConfirmScreen({ worker, lastAction, onRecord, onRetry }) {
             <div className="att-confirm__id">ID: {worker.employee_id}</div>
             <div className="att-confirm__last">{lastActionText}</div>
             <div className="att-confirm__actions">
-                <button className="att-btn-timein" onClick={() => handle('time_in')} disabled={submitting}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0 0V8m0 4h4m-4 0H8M12 21a9 9 0 100-18 9 9 0 000 18z" />
-                    </svg>
-                    Time In
-                    <span className="att-btn-sub">Clock In</span>
-                </button>
-                <button className="att-btn-timeout" onClick={() => handle('time_out')} disabled={submitting}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m0 0l3-3m-3 3l3 3M12 21a9 9 0 100-18 9 9 0 000 18z" />
-                    </svg>
-                    Time Out
-                    <span className="att-btn-sub">Clock Out</span>
-                </button>
+                {isClockedIn ? (
+                    /* Currently clocked in — only allow Time Out */
+                    <button className="att-btn-timeout" onClick={() => handle('time_out', lastType)} disabled={submitting} style={{ width: '100%' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m0 0l3-3m-3 3l3 3M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                        </svg>
+                        {lastType === 'overtime' ? 'End Overtime' : 'Time Out'}
+                        <span className="att-btn-sub">{lastType === 'overtime' ? 'OT Clock Out' : 'Clock Out'}</span>
+                    </button>
+                ) : (
+                    /* Not clocked in — only allow Time In */
+                    <button className="att-btn-timein" onClick={() => handle('time_in')} disabled={submitting} style={{ width: '100%' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4m0 0V8m0 4h4m-4 0H8M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                        </svg>
+                        Time In
+                        <span className="att-btn-sub">Clock In</span>
+                    </button>
+                )}
             </div>
-            <button className="att-btn-secondary" onClick={onRetry}>Re-scan face</button>
+            {/* Show OT button after clocking out from regular shift */}
+            {isClockedOut && lastAction && lastType === 'regular' && (
+                <button className="att-btn-primary" onClick={onStartOT} style={{ marginTop: 'var(--sp-3)', background: 'var(--gold)', color: '#000', width: '100%' }}>
+                    ⏱ Start Overtime (125% rate)
+                </button>
+            )}
+            <button className="att-btn-secondary" onClick={onRetry} style={{ marginTop: 'var(--sp-3)' }}>Re-scan face</button>
         </div>
     );
 }
