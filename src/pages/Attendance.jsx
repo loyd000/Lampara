@@ -1,8 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { Link } from 'react-router-dom';
-import { loadOpenCV, detectFace, drawDetection, isOpenCVReady } from '../lib/opencv-face-detector.js';
 import './Attendance.css';
+
+// Remove OpenCV dependency, use pure face-api.js
+// We add a native helper to draw the detection box on canvas
+function drawFaceBox(canvas, video, box) {
+    if (!canvas || !video || !box) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.15)';
+    ctx.fillRect(box.x, box.y, box.width, box.height);
+}
 
 const MODEL_URL = '/models';
 
@@ -52,9 +66,9 @@ export default function Attendance() {
     }, []);
 
     useEffect(() => {
-        loadOpenCV()
-            .then(() => setCvReady(true))
-            .catch(err => setModelError('Failed to load OpenCV: ' + err.message));
+        getFaceApi()
+            .then(() => setCvReady(true)) // kept variable name cvReady to prevent huge refactor spread
+            .catch(err => setModelError('Failed to load Face detection AI: ' + err.message));
     }, []);
 
     const [pendingOT, setPendingOT] = useState(false);
@@ -380,19 +394,33 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     }, [cameraActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const startLoop = () => {
-        detectionRef.current = setInterval(() => {
+        const loop = async () => {
             const video = videoRef.current;
-            if (!video || video.readyState < 2) return;
-            const rect = detectFace(video);
-            drawDetection(canvasRef.current, video, rect);
-            if (rect) {
-                setCaptureStatus('Face detected — click Capture');
-                setCaptureStatusType('ok');
-            } else {
-                setCaptureStatus('No face detected. Adjust your position.');
-                setCaptureStatusType('warn');
+            if (!video || video.readyState < 2 || !cameraActive) return;
+            
+            try {
+                const faceapi = await getFaceApi();
+                // TinyFaceDetector finds the box bounding the face natively
+                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }));
+                
+                if (detection) {
+                    drawFaceBox(canvasRef.current, video, detection.box);
+                    setCaptureStatus('Face detected — click Capture');
+                    setCaptureStatusType('ok');
+                } else {
+                    if (canvasRef.current) canvasRef.current.getContext('2d').clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                    setCaptureStatus('No face detected. Adjust your position.');
+                    setCaptureStatusType('warn');
+                }
+            } catch (e) {
+                // Ignore API errors while waiting to load
             }
-        }, 100);
+            
+            if (cameraActive) {
+                detectionRef.current = setTimeout(loop, 200);
+            }
+        };
+        loop();
     };
 
     const capture = async () => {
@@ -418,13 +446,13 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     };
 
     const stopCamera = () => {
-        clearInterval(detectionRef.current);
-        streamRef.current?.getTracks().forEach(t => t.stop());
         setCameraActive(false);
+        clearTimeout(detectionRef.current);
+        streamRef.current?.getTracks().forEach(t => t.stop());
     };
 
     useEffect(() => () => {
-        clearInterval(detectionRef.current);
+        clearTimeout(detectionRef.current);
         streamRef.current?.getTracks().forEach(t => t.stop());
     }, []);
 
@@ -653,35 +681,17 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             if (verifiedRef.current || !videoRef.current) return;
             const video = videoRef.current;
 
-            if (document.hidden || video.paused || video.readyState < 2) {
-                intervalRef.current = setTimeout(detect, 200);
+            if (document.hidden || video.paused || video.readyState < 2 || isVerifying) {
+                intervalRef.current = setTimeout(detect, 250);
                 return;
             }
 
-            // Fast OpenCV detection
-            const rect = detectFace(video);
-            drawDetection(canvasRef.current, video, rect);
-
-            if (!rect) {
-                setStatus('scanning');
-                setStatusMsg('Position your face in the frame');
-                intervalRef.current = setTimeout(detect, 100);
-                return;
-            }
-
-            // Face found by OpenCV — now do heavy descriptor work with face-api
-            if (isVerifying) {
-                intervalRef.current = setTimeout(detect, 200);
-                return;
-            }
-
-            setStatus('detected');
-            setStatusMsg('Verifying identity…');
             isVerifying = true;
 
             getFaceApi().then(async (faceapi) => {
                 if (verifiedRef.current) return;
 
+                // We do everything in one go: find the box + landmarks + descriptor
                 const detection = await faceapi
                     .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
                     .withFaceLandmarks()
@@ -691,11 +701,18 @@ function CameraScreen({ worker, onVerified, onCancel }) {
                 isVerifying = false;
 
                 if (!detection) {
+                    if (canvasRef.current) canvasRef.current.getContext('2d').clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
                     setStatus('scanning');
                     setStatusMsg('Position your face in the frame');
-                    intervalRef.current = setTimeout(detect, 100);
+                    intervalRef.current = setTimeout(detect, 200);
                     return;
                 }
+
+                // Draw the box using pure canvas
+                drawFaceBox(canvasRef.current, video, detection.detection.box);
+                
+                setStatus('detected');
+                setStatusMsg('Verifying identity…');
 
                 const distance = faceapi.euclideanDistance(detection.descriptor, targetDescriptor);
                 if (distance > 0.6) {
