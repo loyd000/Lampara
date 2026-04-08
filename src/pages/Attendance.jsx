@@ -431,7 +431,10 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     const startLoop = () => {
         const loop = async () => {
             const video = videoRef.current;
-            if (!video || video.readyState < 2 || !cameraActive) return;
+            // Stop loop if camera is no longer active
+            if (!video || video.readyState < 2 || !cameraActive) {
+                return;
+            }
             
             try {
                 const faceapi = await getFaceApi();
@@ -451,7 +454,8 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
                 // Ignore API errors while waiting to load
             }
             
-            if (cameraActive) {
+            // Schedule next loop only if still active
+            if (cameraActive && videoRef.current?.readyState >= 2) {
                 detectionRef.current = setTimeout(loop, 200);
             }
         };
@@ -482,13 +486,53 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
 
     const stopCamera = () => {
         setCameraActive(false);
-        clearTimeout(detectionRef.current);
-        streamRef.current?.getTracks().forEach(t => t.stop());
+        
+        // Clear detection timeout
+        if (detectionRef.current) {
+            clearTimeout(detectionRef.current);
+            detectionRef.current = null;
+        }
+        
+        // Stop all tracks on the stream
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => {
+                track.stop();
+            });
+            streamRef.current = null;
+        }
+        
+        // Clear canvas
+        if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext('2d');
+            ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+        
+        // Clear video source
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
     };
 
-    useEffect(() => () => {
-        clearTimeout(detectionRef.current);
-        streamRef.current?.getTracks().forEach(t => t.stop());
+    useEffect(() => {
+        // Cleanup on unmount or when cameraActive changes
+        return () => {
+            if (detectionRef.current) {
+                clearTimeout(detectionRef.current);
+                detectionRef.current = null;
+            }
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => {
+                    track.stop();
+                });
+                streamRef.current = null;
+            }
+            if (canvasRef.current) {
+                canvasRef.current.getContext('2d')?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            }
+            if (videoRef.current) {
+                videoRef.current.srcObject = null;
+            }
+        };
     }, []);
 
     const handleSubmit = async (e) => {

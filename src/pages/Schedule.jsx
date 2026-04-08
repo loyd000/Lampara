@@ -33,16 +33,28 @@ function formatDisplay(dateStr) {
 }
 
 async function sendEmail(templateId, params) {
-    await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            service_id: EMAILJS_SERVICE_ID,
-            template_id: templateId,
-            user_id: EMAILJS_PUBLIC_KEY,
-            template_params: params,
-        }),
-    });
+    try {
+        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                service_id: EMAILJS_SERVICE_ID,
+                template_id: templateId,
+                user_id: EMAILJS_PUBLIC_KEY,
+                template_params: params,
+            }),
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.message || `HTTP ${response.status}`);
+        }
+        
+        return null; // Success
+    } catch (err) {
+        console.error('Email send failed:', err);
+        return err.message; // Return error message
+    }
 }
 
 /* ============================================================
@@ -242,38 +254,86 @@ function BookingModal({ date, dateDisplay, onClose, onSuccess }) {
 
     const handleChange = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
+    const validateBooking = () => {
+        // Trim whitespace for validation
+        const name = form.name.trim();
+        const email = form.email.trim();
+        const phone = form.phone.trim();
+        const address = form.address.trim();
+        
+        // Validate name
+        if (!name || name.length < 2) {
+            return 'Please enter a valid full name (at least 2 characters)';
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return 'Please enter a valid email address';
+        }
+        
+        // Validate phone if provided
+        if (phone && !/^[\d\s\-\+\(\)]{7,}$/.test(phone)) {
+            return 'Please enter a valid phone number';
+        }
+        
+        // Validate address
+        if (!address || address.length < 5) {
+            return 'Please enter a valid address (at least 5 characters)';
+        }
+        
+        return null; // No errors
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setSending(true);
         setError('');
+        
+        // Validate before submitting
+        const validationError = validateBooking();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+        
+        setSending(true);
 
         try {
-            // 1. Save booking to Supabase
-            const { error: dbErr } = await supabase.from('bookings').insert({
+            // Sanitize inputs: trim whitespace
+            const sanitized = {
                 date,
-                name:    form.name,
-                email:   form.email,
-                phone:   form.phone  || null,
-                address: form.address,
-                message: form.message || null,
-            });
-            if (dbErr) throw dbErr;
+                name: form.name.trim(),
+                email: form.email.toLowerCase().trim(),
+                phone: form.phone?.trim() || null,
+                address: form.address.trim(),
+                message: form.message?.trim() || null,
+            };
+            
+            // 1. Save booking to Supabase
+            const { error: dbErr } = await supabase.from('bookings').insert(sanitized);
+            if (dbErr) throw new Error(`Database error: ${dbErr.message}`);
 
             // 2. Notify company
-            await sendEmail(EMAILJS_COMPANY_TPL, {
+            const emailErr = await sendEmail(EMAILJS_COMPANY_TPL, {
                 booking_date:   dateDisplay,
-                client_name:    form.name,
-                client_email:   form.email,
-                client_phone:   form.phone   || 'Not provided',
-                client_address: form.address,
-                client_message: form.message || 'No additional notes',
+                client_name:    sanitized.name,
+                client_email:   sanitized.email,
+                client_phone:   sanitized.phone   || 'Not provided',
+                client_address: sanitized.address,
+                client_message: sanitized.message || 'No additional notes',
                 to_email:       'lamparaeis@gmail.com',
             });
+            
+            // Email failure is not critical - booking already saved
+            if (emailErr) {
+                console.warn('Email notification failed:', emailErr);
+            }
 
             onSuccess('Booking submitted! We\'ll reach out within 24 hours to confirm your appointment.');
         } catch (err) {
-            console.error(err);
-            setError('Something went wrong. Please try again or message us on Facebook.');
+            console.error('Booking error:', err);
+            setError(`Booking failed: ${err.message}. Please try again or message us on Facebook.`);
+        } finally {
             setSending(false);
         }
     };

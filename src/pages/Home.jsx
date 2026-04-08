@@ -639,26 +639,56 @@ function FAQItem({ q, a }) {
 function Contact() {
     const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
     const [status, setStatus] = useState('idle'); // idle | sending | success | error
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
+    const validateEmail = () => {
+        const name = form.name.trim();
+        const email = form.email.trim();
+        const message = form.message.trim();
+        
+        if (!name || name.length < 2) {
+            return 'Please enter a valid name';
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return 'Please enter a valid email address';
+        }
+        
+        if (!message || message.length < 5) {
+            return 'Please enter a message (at least 5 characters)';
+        }
+        
+        return null;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        
+        const validationError = validateEmail();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+        
         setStatus('sending');
 
         try {
-            // EmailJS send via public API (no SDK needed)
+            // Sanitize inputs
             const payload = {
                 service_id: 'service_lampara',
                 template_id: 'template_lampara',
-                user_id: '_rgBAjoEUDIAq9fGO', // Replace with your EmailJS public key
+                user_id: '_rgBAjoEUDIAq9fGO',
                 template_params: {
-                    from_name: form.name,
-                    from_email: form.email,
-                    from_phone: form.phone,
-                    message: form.message,
+                    from_name: form.name.trim(),
+                    from_email: form.email.toLowerCase().trim(),
+                    from_phone: form.phone?.trim() || 'Not provided',
+                    message: form.message.trim(),
                     to_email: 'lamparaeis@gmail.com',
                 },
             };
@@ -669,10 +699,15 @@ function Contact() {
                 body: JSON.stringify(payload),
             });
 
-            if (!res.ok) throw new Error('Failed to send');
+            if (!res.ok) {
+                throw new Error(`Email service error: HTTP ${res.status}`);
+            }
+            
             setStatus('success');
             setForm({ name: '', email: '', phone: '', message: '' });
-        } catch {
+        } catch (err) {
+            console.error('Contact form error:', err);
+            setError(`Failed to send message: ${err.message}`);
             setStatus('error');
         }
     };
@@ -706,6 +741,9 @@ function Contact() {
                             </div>
                         ) : (
                             <form className="contact__form" onSubmit={handleSubmit} noValidate>
+                                {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: 'var(--sp-3)', borderRadius: '6px', marginBottom: 'var(--sp-4)', fontSize: '0.9rem' }}>
+                                    <strong>Error:</strong> {error}
+                                </div>}
                                 <div className="contact__row">
                                     <div className="contact__field">
                                         <label htmlFor="contact-name">Full Name</label>

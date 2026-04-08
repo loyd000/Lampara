@@ -97,6 +97,7 @@ function WorkersTab() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
+    const [error, setError] = useState('');
 
     const load = async () => {
         setLoading(true);
@@ -117,31 +118,62 @@ function WorkersTab() {
     useEffect(() => { load(); }, []);
 
     const handleApprove = async (id) => {
+        setError('');
         setActionLoading(id + '_approve');
-        await supabase.from('workers').update({ status: 'active' }).eq('id', id);
-        setActionLoading(null);
-        load();
+        try {
+            const { error: err } = await supabase.from('workers').update({ status: 'active' }).eq('id', id);
+            if (err) throw err;
+            await load();
+        } catch (err) {
+            setError(`Failed to approve worker: ${err.message}`);
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleReject = async (id, name) => {
         if (!window.confirm(`Reject "${name}"'s registration?`)) return;
+        setError('');
         setActionLoading(id + '_reject');
-        await supabase.from('workers').update({ status: 'rejected' }).eq('id', id);
-        setActionLoading(null);
-        load();
+        try {
+            const { error: err } = await supabase.from('workers').update({ status: 'rejected' }).eq('id', id);
+            if (err) throw err;
+            await load();
+        } catch (err) {
+            setError(`Failed to reject worker: ${err.message}`);
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const handleDelete = async (id, name) => {
         if (!window.confirm(`Remove worker "${name}" and all their attendance records?`)) return;
-        await supabase.from('attendance_logs').delete().eq('worker_id', id);
-        await supabase.from('payroll_adjustments').delete().eq('worker_id', id);
-        await supabase.from('workers').delete().eq('id', id);
-        load();
+        setError('');
+        try {
+            const { error: logsErr } = await supabase.from('attendance_logs').delete().eq('worker_id', id);
+            if (logsErr) throw new Error(`Delete logs failed: ${logsErr.message}`);
+            
+            const { error: adjErr } = await supabase.from('payroll_adjustments').delete().eq('worker_id', id);
+            if (adjErr) throw new Error(`Delete adjustments failed: ${adjErr.message}`);
+            
+            const { error: workerErr } = await supabase.from('workers').delete().eq('id', id);
+            if (workerErr) throw new Error(`Delete worker failed: ${workerErr.message}`);
+            
+            await load();
+        } catch (err) {
+            setError(`Failed to delete worker: ${err.message}`);
+        }
     };
 
     const handleUpdateRate = async (id, rate) => {
-        await supabase.from('workers').update({ daily_rate: rate }).eq('id', id);
-        load();
+        setError('');
+        try {
+            const { error: err } = await supabase.from('workers').update({ daily_rate: rate }).eq('id', id);
+            if (err) throw err;
+            await load();
+        } catch (err) {
+            setError(`Failed to update rate: ${err.message}`);
+        }
     };
 
     const pending = workers.filter(w => w.status === 'pending');
@@ -150,6 +182,9 @@ function WorkersTab() {
 
     return (
         <div>
+            {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: 'var(--sp-3)', borderRadius: '6px', marginBottom: 'var(--sp-4)', fontSize: '0.9rem' }}>
+                <strong>Error:</strong> {error}
+            </div>}
             {/* ---- Pending Approvals ---- */}
             {pending.length > 0 && (
                 <div style={{ marginBottom: 'var(--sp-8)' }}>
