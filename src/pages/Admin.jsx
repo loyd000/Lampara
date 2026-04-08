@@ -255,7 +255,7 @@ function Dashboard({ user }) {
                         ) : (
                             <div className="admin-projects">
                                 {projects.map((project) => {
-                                    const photos = project.project_photos || [];
+                                    const photos = (project?.project_photos || []).filter((p) => p?.storage_path);
                                     const coverPath = photos[0]?.storage_path;
                                     const coverUrl = coverPath
                                         ? supabase.storage.from('project-images').getPublicUrl(coverPath).data.publicUrl + '?width=200&resize=cover'
@@ -472,15 +472,17 @@ function ProjectModal({ project, onClose, onSaved }) {
                         <div className="admin-photos">
                             <label>Existing Photos</label>
                             <div className="admin-photos__grid">
-                                {existingPhotos.map((photo) => {
-                                    const url = supabase.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl + '?width=120&resize=cover';
-                                    return (
-                                        <div key={photo.id} className="admin-photos__item">
-                                            <img src={url} alt="" />
-                                            <button type="button" onClick={() => removeExistingPhoto(photo)}>&times;</button>
-                                        </div>
-                                    );
-                                })}
+                                {existingPhotos
+                                    .filter((photo) => photo?.storage_path)
+                                    .map((photo) => {
+                                        const url = supabase.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl + '?width=120&resize=cover';
+                                        return (
+                                            <div key={photo.id} className="admin-photos__item">
+                                                <img src={url} alt="" />
+                                                <button type="button" onClick={() => removeExistingPhoto(photo)}>&times;</button>
+                                            </div>
+                                        );
+                                    })}
                             </div>
                         </div>
                     )}

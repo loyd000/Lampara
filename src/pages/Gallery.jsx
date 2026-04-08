@@ -7,15 +7,17 @@ const FILTERS = ['all', 'residential', 'commercial', 'industrial'];
 
 const GalleryCard = memo(({ project, index, onOpen }) => {
     const getImageUrls = (proj) => {
-        const photos = [...(proj.project_photos || [])].sort(
-            (a, b) => a.order_index - b.order_index
+        const photos = [...(proj?.project_photos || [])].sort(
+            (a, b) => (a?.order_index ?? 0) - (b?.order_index ?? 0)
         );
-        return photos.map(
-            (p) =>
-                supabase.storage
-                    .from('project-images')
-                    .getPublicUrl(p.storage_path).data.publicUrl
-        );
+        return photos
+            .filter((p) => p?.storage_path)
+            .map(
+                (p) =>
+                    supabase.storage
+                        .from('project-images')
+                        .getPublicUrl(p.storage_path).data.publicUrl
+            );
     };
 
     const getCover = (proj) => {
@@ -24,7 +26,7 @@ const GalleryCard = memo(({ project, index, onOpen }) => {
     };
 
     const coverUrl = getCover(project);
-    const photoCount = (project.project_photos || []).length;
+    const photoCount = (project?.project_photos || []).length;
 
     return (
         <div
@@ -35,7 +37,7 @@ const GalleryCard = memo(({ project, index, onOpen }) => {
         >
             <div className="gallery-card__img">
                 {coverUrl && (
-                    <img src={coverUrl} alt={project.title} loading="lazy" />
+                    <img src={coverUrl} alt={project?.title || 'Project'} loading="lazy" />
                 )}
                 <div className="gallery-card__overlay">
                     <span className="gallery-card__count">
@@ -44,9 +46,9 @@ const GalleryCard = memo(({ project, index, onOpen }) => {
                 </div>
             </div>
             <div className="gallery-card__info">
-                <h3>{project.title}</h3>
-                <p className="gallery-card__specs">{project.specs}</p>
-                <p className="gallery-card__location">{project.location}</p>
+                <h3>{project?.title || 'Untitled Project'}</h3>
+                <p className="gallery-card__specs">{project?.specs || 'No specifications'}</p>
+                <p className="gallery-card__location">{project?.location || 'Location TBA'}</p>
             </div>
         </div>
     );
@@ -80,15 +82,17 @@ export default function Gallery() {
     }, []);
 
     const getImageUrls = (project) => {
-        const photos = [...(project.project_photos || [])].sort(
-            (a, b) => a.order_index - b.order_index
+        const photos = [...(project?.project_photos || [])].sort(
+            (a, b) => (a?.order_index ?? 0) - (b?.order_index ?? 0)
         );
-        return photos.map(
-            (p) =>
-                supabase.storage
-                    .from('project-images')
-                    .getPublicUrl(p.storage_path).data.publicUrl
-        );
+        return photos
+            .filter((p) => p?.storage_path)
+            .map(
+                (p) =>
+                    supabase.storage
+                        .from('project-images')
+                        .getPublicUrl(p.storage_path).data.publicUrl
+            );
     };
 
     const getCover = (project) => {
