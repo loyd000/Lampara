@@ -401,7 +401,14 @@
     border-bottom: 2px solid var(--border-light);
     margin-bottom: var(--sp-6);
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.admin-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
 }
 
 .admin-tab {

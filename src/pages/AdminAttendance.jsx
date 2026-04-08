@@ -693,14 +693,21 @@ function DTRTab() {
             const timeOut = dayLogs.findLast ? dayLogs.findLast(l => l.action === 'time_out') : dayLogs.filter(l => l.action === 'time_out').pop();
 
             let hours = null;
+            let otHours = null;
             if (timeIn && timeOut) {
                 const diff = (new Date(timeOut.logged_at) - new Date(timeIn.logged_at)) / (1000 * 60 * 60);
-                hours = Math.max(0, diff).toFixed(2);
+                const lunchBreak = diff > 5 ? 1 : 0; // 1 hr break if duration > 5
+                const workedHours = Math.max(0, diff - lunchBreak);
+                
+                hours = Math.min(8, workedHours).toFixed(2);
+                if (workedHours > 8) {
+                    otHours = (workedHours - 8).toFixed(2);
+                }
             }
 
             const dateObj = new Date(dateStr + 'T12:00:00');
             const dayName = dateObj.toLocaleDateString('en-PH', { weekday: 'short' });
-            rows.push({ date: dateStr, day: d, dayName, timeIn, timeOut, hours });
+            rows.push({ date: dateStr, day: d, dayName, timeIn, timeOut, hours, otHours });
         }
 
         setDtrData(rows);
@@ -713,6 +720,10 @@ function DTRTab() {
 
     const totalHours = dtrData
         ? dtrData.reduce((acc, r) => acc + (r.hours ? parseFloat(r.hours) : 0), 0).toFixed(2)
+        : 0;
+
+    const totalOtHours = dtrData
+        ? dtrData.reduce((acc, r) => acc + (r.otHours ? parseFloat(r.otHours) : 0), 0).toFixed(2)
         : 0;
 
     const presentDays = dtrData
@@ -757,7 +768,7 @@ function DTRTab() {
                             className="btn btn-outline"
                             style={{ fontSize: '0.875rem', flex: '0 0 auto' }}
                             onClick={() => {
-                                const headers = ['Day', 'Date', 'Time In', 'Time Out', 'Hours', 'Remarks'];
+                                const headers = ['Day', 'Date', 'Time In', 'Time Out', 'Reg Hours', 'OT Hours', 'Remarks'];
                                 const fmtT = (ts) => ts ? new Date(ts).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
                                 const rows = dtrData.map(r => {
                                     const isSunday = r.dayName === 'Sun';
@@ -766,10 +777,11 @@ function DTRTab() {
                                         r.dayName, r.day,
                                         fmtT(r.timeIn?.logged_at), fmtT(r.timeOut?.logged_at),
                                         r.hours ?? '',
+                                        r.otHours ?? '',
                                         isSunday ? 'Rest Day' : isAbsent ? 'Absent' : r.timeIn && !r.timeOut ? 'No time-out' : '',
                                     ];
                                 });
-                                rows.push(['', '', '', 'Total Hours', totalHours, '']);
+                                rows.push(['', '', '', 'Total', totalHours, totalOtHours, '']);
                                 downloadCSV(`DTR-${workerInfo.name.replace(/ /g,'-')}-${selectedMonth}.csv`, headers, rows);
                             }}
                         >
@@ -811,12 +823,12 @@ function DTRTab() {
                             <div className="dtr-summary-card__label">Days Present</div>
                         </div>
                         <div className="dtr-summary-card">
-                            <div className="dtr-summary-card__value">{absentDays}</div>
-                            <div className="dtr-summary-card__label">Days Absent</div>
+                            <div className="dtr-summary-card__value">{totalHours}</div>
+                            <div className="dtr-summary-card__label">Reg Hours</div>
                         </div>
                         <div className="dtr-summary-card">
-                            <div className="dtr-summary-card__value">{totalHours}</div>
-                            <div className="dtr-summary-card__label">Total Hours</div>
+                            <div className="dtr-summary-card__value" style={{ color: 'var(--gold)' }}>{totalOtHours}</div>
+                            <div className="dtr-summary-card__label">OT Hours</div>
                         </div>
                     </div>
 
@@ -827,7 +839,8 @@ function DTRTab() {
                                     <th>Date</th>
                                     <th>Time In</th>
                                     <th>Time Out</th>
-                                    <th>Hours</th>
+                                    <th>Reg. Hrs</th>
+                                    <th>OT Hrs</th>
                                     <th>Remarks</th>
                                 </tr>
                             </thead>
@@ -843,7 +856,8 @@ function DTRTab() {
                                             <td>{row.dayName}, {row.day}</td>
                                             <td>{fmtTime(row.timeIn?.logged_at)}</td>
                                             <td>{fmtTime(row.timeOut?.logged_at)}</td>
-                                            <td>{row.hours ?? '—'}</td>
+                                            <td style={{ fontWeight: 500 }}>{row.hours ?? '—'}</td>
+                                            <td style={{ color: 'var(--gold-dim)', fontWeight: 600 }}>{row.otHours ?? '—'}</td>
                                             <td style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                                                 {isSunday ? 'Rest Day' : isAbsent ? 'Absent' : row.timeIn && !row.timeOut ? 'No time-out' : ''}
                                             </td>
@@ -853,8 +867,9 @@ function DTRTab() {
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colSpan="3" style={{ textAlign: 'right', paddingRight: 'var(--sp-3)' }}>Total Hours Worked:</td>
-                                    <td>{totalHours}</td>
+                                    <td colSpan="3" style={{ textAlign: 'right', paddingRight: 'var(--sp-3)' }}>Total:</td>
+                                    <td style={{ fontWeight: 700 }}>{totalHours}</td>
+                                    <td style={{ fontWeight: 700, color: 'var(--gold)' }}>{totalOtHours}</td>
                                     <td />
                                 </tr>
                             </tfoot>
