@@ -47,9 +47,17 @@ function Login() {
         setError('');
         setSubmitting(true);
 
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) setError(error.message);
-        setSubmitting(false);
+        const { error } = await supabase.auth.signInWithPassword({ 
+            email: email.trim(), 
+            password 
+        });
+        
+        if (error) {
+            setError(error.message);
+            setSubmitting(false);
+        }
+        // If successful, the global onAuthStateChange listener in <Admin> will catch it
+        // and unmount this login component, so we don't need to do anything else here.
     };
 
     return (

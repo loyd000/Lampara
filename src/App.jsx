@@ -6,6 +6,7 @@ import Gallery from './pages/Gallery.jsx';
 import Schedule from './pages/Schedule.jsx';
 import Admin from './pages/Admin.jsx';
 import Attendance from './pages/Attendance.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 
 export default function App() {
     return (
@@ -42,6 +43,7 @@ export default function App() {
                     }
                 />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/attendance" element={<Attendance />} />
             </Routes>
         </>
