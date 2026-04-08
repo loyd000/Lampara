@@ -77,22 +77,22 @@ function Hero() {
             </div>
             <div className="hero__overlay" />
             <div className="container hero__content">
-                <div className="hero__badge badge badge-gold" data-aos="fade-down" data-aos-delay="100">Trusted Solar Partner</div>
-                <h1 className="hero__title" data-aos="fade-up" data-aos-delay="200">
+                <div className="hero__badge badge badge-gold">Trusted Solar Partner</div>
+                <h1 className="hero__title">
                     Power Outage Worries,<br />
                     <span className="hero__accent">No More.</span>
                 </h1>
-                <p className="hero__sub" data-aos="fade-up" data-aos-delay="300">
+                <p className="hero__sub">
                     Professional solar installation that saves up to 90% on electricity bills.
                     Premium hybrid systems backed by 25-year warranty.
                 </p>
-                <div className="hero__actions" data-aos="fade-up" data-aos-delay="400">
+                <div className="hero__actions">
                     {/* <a href="#packages" className="btn btn-gold btn-lg">View Packages</a> */}
                     <a href="#contact" className="btn btn-outline btn-lg" style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}>
                         Get Free Quote
                     </a>
                 </div>
-                <div className="hero__trust" data-aos="zoom-in" data-aos-delay="500">
+                <div className="hero__trust">
                     <div className="hero__trust-item">
                         <strong>1000+</strong>
                         <span>Installations</span>
@@ -127,7 +127,7 @@ function Stats() {
     return (
         <section className="stats">
             <div className="container">
-                <div className="stats__grid" data-aos="fade-up" data-aos-delay="200">
+                <div className="stats__grid">
                     {stats.map((s) => (
                         <div key={s.label} className="stats__item">
                             <div className="stats__value">{s.value}</div>
@@ -162,7 +162,7 @@ function About() {
         <section id="about" className="section">
             <div className="container">
                 <div className="about">
-                    <div className="about__text" data-aos="fade-right">
+                    <div className="about__text">
                         <div className="section-header">
                             <div className="badge badge-gold">About Us</div>
                             <h2>Your Trusted Solar Partner</h2>
@@ -179,7 +179,7 @@ function About() {
                             design custom solar solutions that fit your energy needs and budget.
                         </p>
                     </div>
-                    <div className="about__image" data-aos="fade-left">
+                    <div className="about__image">
                         <div className="about__slideshow">
                             {ABOUT_IMAGES.map((img, i) => (
                                 <img
@@ -333,13 +333,13 @@ function Installations() {
     return (
         <section id="installations" className="section">
             <div className="container">
-                <div className="section-header center" data-aos="fade-up">
+                <div className="section-header center">
                     <div className="badge badge-gold">Portfolio</div>
                     <h2>Featured Installations</h2>
                     <p>Recent solar power projects across Metro Manila and nearby provinces</p>
                 </div>
 
-                <div className="installs__grid" data-aos="fade-up" data-aos-delay="200">
+                <div className="installs__grid">
                     {loading
                         ? [0, 1, 2].map((i) => (
                             <div key={i} className="skeleton installs__skeleton" />
@@ -420,11 +420,11 @@ function SolarInfo() {
     return (
         <section id="solar-info" className="section" style={{ background: 'var(--surface-alt)' }}>
             <div className="container">
-                <div className="section-header center" data-aos="fade-up">
+                <div className="section-header center">
                     <div className="badge badge-gold">Why Solar</div>
                     <h2>Why Choose Solar Power?</h2>
                 </div>
-                <div className="benefits__grid" data-aos="fade-up" data-aos-delay="200">
+                <div className="benefits__grid">
                     {benefits.map((b) => (
                         <div key={b.title} className="card benefits__card">
                             <div className="benefits__icon">{b.icon}</div>
@@ -467,14 +467,14 @@ function Calculator() {
     return (
         <section id="calculator" className="section">
             <div className="container">
-                <div className="section-header center" data-aos="fade-up">
+                <div className="section-header center">
                     <div className="badge badge-gold">Estimate</div>
                     <h2>Solar Savings Calculator</h2>
                     <p>See how much you could save with solar power</p>
                 </div>
 
                 <div className="calc">
-                    <div className="calc__sizes" data-aos="fade-right">
+                    <div className="calc__sizes">
                         <label className="calc__label">System Size (kWp)</label>
                         <div className="calc__options">
                             {sizes.map((s) => (
@@ -489,7 +489,7 @@ function Calculator() {
                         </div>
                     </div>
 
-                    <div className="calc__results" data-aos="fade-left" data-aos-delay="200">
+                    <div className="calc__results">
                         <div className="calc__result">
                             <span className="calc__result-label">Monthly Savings</span>
                             <span className="calc__result-value">₱{monthly.toLocaleString()}</span>
@@ -544,11 +544,11 @@ function Testimonials() {
     return (
         <section className="section" style={{ background: 'var(--surface-alt)' }}>
             <div className="container">
-                <div className="section-header center" data-aos="fade-up">
+                <div className="section-header center">
                     <div className="badge badge-gold">Testimonials</div>
                     <h2>What Our Clients Say</h2>
                 </div>
-                <div className="testimonials__grid" data-aos="fade-up" data-aos-delay="200">
+                <div className="testimonials__grid">
                     {items.map((t) => (
                         <div key={t.name} className="card testimonials__card">
                             <p className="testimonials__text">"{t.text}"</p>
@@ -593,11 +593,11 @@ function FAQ() {
     return (
         <section className="section">
             <div className="container">
-                <div className="section-header center" data-aos="fade-up">
+                <div className="section-header center">
                     <div className="badge badge-gold">FAQ</div>
                     <h2>Frequently Asked Questions</h2>
                 </div>
-                <div className="faq__list" data-aos="fade-up" data-aos-delay="200">
+                <div className="faq__list">
                     {items.map((item) => (
                         <FAQItem key={item.q} q={item.q} a={item.a} />
                     ))}
@@ -680,7 +680,7 @@ function Contact() {
     return (
         <section id="contact" className="contact-section">
             <div className="container">
-                <div className="contact__header" data-aos="fade-up">
+                <div className="contact__header">
                     <div className="badge badge-gold-outline">Contact Us</div>
                     <h2 style={{ color: '#fff' }}>Ready to Go Solar?</h2>
                     <p style={{ color: 'rgba(255,255,255,0.65)' }}>
@@ -690,7 +690,7 @@ function Contact() {
 
                 <div className="contact__grid">
                     {/* Left — Email Form */}
-                    <div className="contact__form-wrap" data-aos="fade-right" data-aos-delay="200">
+                    <div className="contact__form-wrap">
                         {status === 'success' ? (
                             <div className="contact__success">
                                 <div className="contact__success-icon">
@@ -773,7 +773,7 @@ function Contact() {
                     </div>
 
                     {/* Right — Info */}
-                    <div className="contact__info" data-aos="fade-left" data-aos-delay="400">
+                    <div className="contact__info">
                         <div className="contact__info-item">
                             <div className="contact__info-icon">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
