@@ -282,10 +282,10 @@ function LoginScreen({ onLogin, onRegister }) {
                 p_password_hash: hash,
             });
 
-            if (rpcError) throw rpcError;
+            if (rpcError) throw new Error(`Login service error: ${rpcError.message}`);
 
             if (!data || data.length === 0) {
-                setError('Invalid employee ID or password.');
+                setError('❌ Invalid Employee ID or password. Please check and try again.');
                 setLoading(false);
                 return;
             }
@@ -298,13 +298,13 @@ function LoginScreen({ onLogin, onRegister }) {
                 return;
             }
             if (worker.status === 'rejected') {
-                setError('Your account has been rejected. Please contact admin.');
+                setError('❌ Your account was rejected by admin. Please contact your manager for assistance.');
                 setLoading(false);
                 return;
             }
             onLogin(worker);
         } catch (err) {
-            setError(err.message || 'Login failed.');
+            setError(`❌ ${err.message || 'Login failed. Please try again or contact admin.'}`);
         }
         setLoading(false);
     };
@@ -544,9 +544,11 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
-        if (form.password.length < 10) { setError('Password must be at least 10 characters.'); return; }
-        if (!descriptor) { setError('Please capture your face photo first.'); return; }
+        if (!form.password.trim()) { setError('❌ Password is required.'); return; }
+        if (form.password.length < 10) { setError('❌ Password must be at least 10 characters long.'); return; }
+        if (!form.confirmPassword.trim()) { setError('❌ Please confirm your password.'); return; }
+        if (form.password !== form.confirmPassword) { setError('❌ Password confirmation does not match. Please try again.'); return; }
+        if (!descriptor) { setError('❌ Please capture your face photo first before registering.'); return; }
         setSaving(true);
         try {
             const hash = await hashPassword(form.password);
@@ -559,10 +561,10 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
                 face_descriptor: descriptor,
                 status: 'pending',
             });
-            if (err) throw err;
+            if (err) throw new Error(`Registration failed: ${err.message}. Please contact admin if issue persists.`);
             onSubmitted();
         } catch (err) {
-            setError(err.message);
+            setError(`❌ ${err.message}`);
         }
         setSaving(false);
     };

@@ -175,6 +175,7 @@ function Dashboard({ user }) {
         if (!deleteConfirm) return;
         
         const id = deleteConfirm.id;
+        const projectTitle = deleteConfirm.title;
         const project = projects.find((p) => p.id === id);
         const photos = project?.project_photos || [];
         
@@ -182,22 +183,25 @@ function Dashboard({ user }) {
         try {
             // Delete photos from storage
             if (photos.length > 0) {
-                await supabase.storage
+                const storageErr = await supabase.storage
                     .from('project-images')
                     .remove(photos.map((p) => p.storage_path));
+                if (storageErr) throw new Error(`Could not delete project images: ${storageErr.message}`);
             }
 
             // Delete photo records
-            await supabase.from('project_photos').delete().eq('project_id', id);
+            const photoErr = await supabase.from('project_photos').delete().eq('project_id', id);
+            if (photoErr) throw new Error(`Could not delete photo records: ${photoErr.message}`);
 
             // Delete project
-            await supabase.from('projects').delete().eq('id', id);
+            const projectErr = await supabase.from('projects').delete().eq('id', id);
+            if (projectErr) throw new Error(`Could not delete project record: ${projectErr.message}`);
 
             loadProjects();
             setDeleteConfirm(null);
         } catch (err) {
             console.error('Delete failed:', err);
-            alert('Failed to delete project: ' + err.message);
+            setError(`❌ Failed to delete "${projectTitle}": ${err.message}`);
         } finally {
             setDeleting(false);
         }
@@ -372,9 +376,18 @@ function ProjectModal({ project, onClose, onSaved }) {
 
     const removeExistingPhoto = async (photo) => {
         if (!window.confirm('Remove this photo?')) return;
-        await supabase.storage.from('project-images').remove([photo.storage_path]);
-        await supabase.from('project_photos').delete().eq('id', photo.id);
-        setExistingPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+        try {
+            setError('');
+            const storageErr = await supabase.storage.from('project-images').remove([photo.storage_path]);
+            if (storageErr) throw new Error(`Could not delete image file: ${storageErr.message}`);
+            
+            const dbErr = await supabase.from('project_photos').delete().eq('id', photo.id);
+            if (dbErr) throw new Error(`Could not delete photo record: ${dbErr.message}`);
+            
+            setExistingPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+        } catch (err) {
+            setError(`❌ Failed to remove photo: ${err.message}`);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -391,7 +404,7 @@ function ProjectModal({ project, onClose, onSaved }) {
                     .from('projects')
                     .update(form)
                     .eq('id', projectId);
-                if (error) throw error;
+                if (error) throw new Error(`Failed to update project details: ${error.message}`);
             } else {
                 // Insert
                 const { data, error } = await supabase
@@ -399,7 +412,7 @@ function ProjectModal({ project, onClose, onSaved }) {
                     .insert({ ...form, order_index: Math.floor(Date.now() / 1000) })
                     .select()
                     .single();
-                if (error) throw error;
+                if (error) throw new Error(`Failed to create project: ${error.message}`);
                 projectId = data.id;
             }
 
@@ -412,7 +425,7 @@ function ProjectModal({ project, onClose, onSaved }) {
                 const { error: uploadError } = await supabase.storage
                     .from('project-images')
                     .upload(path, file);
-                if (uploadError) throw uploadError;
+                if (uploadError) throw new Error(`Failed to upload image "${file.name}": ${uploadError.message}`);
 
                 const { error: insertError } = await supabase
                     .from('project_photos')
@@ -422,12 +435,12 @@ function ProjectModal({ project, onClose, onSaved }) {
                         order_index: existingPhotos.length + i,
                         is_cover: i === 0 && existingPhotos.length === 0,
                     });
-                if (insertError) throw insertError;
+                if (insertError) throw new Error(`Failed to save photo metadata for "${file.name}": ${insertError.message}`);
             }
 
             onSaved();
         } catch (err) {
-            setError(err.message);
+            setError(`❌ ${err.message}`);
         } finally {
             setSaving(false);
         }

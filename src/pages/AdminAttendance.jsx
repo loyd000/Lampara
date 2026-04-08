@@ -125,7 +125,7 @@ function WorkersTab() {
             if (err) throw err;
             await load();
         } catch (err) {
-            setError(`Failed to approve worker: ${err.message}`);
+            setError(`❌ Could not approve worker: ${err.message}. Please try again.`);
         } finally {
             setActionLoading(null);
         }
@@ -140,7 +140,7 @@ function WorkersTab() {
             if (err) throw err;
             await load();
         } catch (err) {
-            setError(`Failed to reject worker: ${err.message}`);
+            setError(`❌ Could not reject "${name}": ${err.message}. Please try again.`);
         } finally {
             setActionLoading(null);
         }
@@ -151,25 +151,26 @@ function WorkersTab() {
         setError('');
         try {
             const { error: logsErr } = await supabase.from('attendance_logs').delete().eq('worker_id', id);
-            if (logsErr) throw new Error(`Delete logs failed: ${logsErr.message}`);
+            if (logsErr) throw new Error(`Could not delete attendance logs: ${logsErr.message}`);
             
             const { error: workerErr } = await supabase.from('workers').delete().eq('id', id);
-            if (workerErr) throw new Error(`Delete worker failed: ${workerErr.message}`);
+            if (workerErr) throw new Error(`Could not delete worker record: ${workerErr.message}`);
             
             await load();
         } catch (err) {
-            setError(`Failed to delete worker: ${err.message}`);
+            setError(`❌ Could not remove worker "${name}": ${err.message}. Contact support if issue persists.`);
         }
     };
 
     const handleUpdateRate = async (id, rate) => {
         setError('');
         try {
+            if (rate < 0) throw new Error('Daily rate cannot be negative');
             const { error: err } = await supabase.from('workers').update({ daily_rate: rate }).eq('id', id);
             if (err) throw err;
             await load();
         } catch (err) {
-            setError(`Failed to update rate: ${err.message}`);
+            setError(`❌ Could not update daily rate: ${err.message}. Please try again.`);
         }
     };
 
@@ -398,10 +399,14 @@ function RegisterWorkerModal({ onClose, onSaved }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (!descriptor) { setError('Please capture the worker\'s face first.'); return; }
-        if (!form.name.trim() || !form.employee_id.trim()) { setError('Name and Employee ID are required.'); return; }
-        if (!form.email.trim()) { setError('Email is required.'); return; }
-        if (!form.password.trim() || form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+        if (!descriptor) { setError('❌ Please capture the worker\'s face first before submitting.'); return; }
+        if (!form.name.trim()) { setError('❌ Name is required.'); return; }
+        if (!form.employee_id.trim()) { setError('❌ Employee ID is required.'); return; }
+        if (!form.email.trim()) { setError('❌ Email is required.'); return; }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(form.email.trim())) { setError('❌ Please enter a valid email address.'); return; }
+        if (!form.password.trim()) { setError('❌ Password is required.'); return; }
+        if (form.password.length < 10) { setError('❌ Password must be at least 10 characters long.'); return; }
 
         setSaving(true);
         try {
