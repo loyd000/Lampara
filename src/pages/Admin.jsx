@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { logAction, AUDIT_ACTIONS } from '../lib/auditLog.js';
 import AttendanceTab from './AdminAttendance.jsx';
 import ScheduleTab from './AdminSchedule.jsx';
 import './Admin.css';
@@ -196,6 +197,8 @@ function Dashboard({ user }) {
             // Delete project
             const projectErr = await supabase.from('projects').delete().eq('id', id);
             if (projectErr) throw new Error(`Could not delete project record: ${projectErr.message}`);
+            
+            await logAction(AUDIT_ACTIONS.PROJECT_DELETE, { projectId: id, title: projectTitle });
 
             loadProjects();
             setDeleteConfirm(null);
@@ -405,6 +408,7 @@ function ProjectModal({ project, onClose, onSaved }) {
                     .update(form)
                     .eq('id', projectId);
                 if (error) throw new Error(`Failed to update project details: ${error.message}`);
+                await logAction(AUDIT_ACTIONS.PROJECT_UPDATE, { projectId, title: form.title });
             } else {
                 // Insert
                 const { data, error } = await supabase
@@ -414,6 +418,7 @@ function ProjectModal({ project, onClose, onSaved }) {
                     .single();
                 if (error) throw new Error(`Failed to create project: ${error.message}`);
                 projectId = data.id;
+                await logAction(AUDIT_ACTIONS.PROJECT_CREATE, { projectId, title: form.title });
             }
 
             // Upload new photos

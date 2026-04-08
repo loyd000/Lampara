@@ -75,17 +75,34 @@ GalleryCard.displayName = 'GalleryCard';
 
 export default function Gallery() {
     const [projects, setProjects] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
     const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
+    
+    const ITEMS_PER_PAGE = 12;
 
     useEffect(() => {
         async function load() {
             try {
+                setLoading(true);
+                const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+                
+                // Get total count
+                const { count, error: countError } = await supabase
+                    .from('projects')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (countError) throw countError;
+                setTotalCount(count || 0);
+                
+                // Get paginated projects
                 const { data, error } = await supabase
                     .from('projects')
                     .select(`*, project_photos(storage_path, is_cover, order_index)`)
-                    .order('order_index', { ascending: false });
+                    .order('order_index', { ascending: false })
+                    .range(offset, offset + ITEMS_PER_PAGE - 1);
 
                 if (error) throw error;
                 setProjects(data || []);
@@ -96,7 +113,7 @@ export default function Gallery() {
             }
         }
         load();
-    }, []);
+    }, [currentPage]);
 
     const getImageUrls = (project) => {
         const photos = [...(project?.project_photos || [])].sort(
@@ -129,6 +146,8 @@ export default function Gallery() {
             ? projects
             : projects.filter((p) => p.category === filter);
     }, [filter, projects]);
+    
+    const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
     const openLightbox = (project) => {
         const images = getImageUrls(project);
@@ -196,6 +215,47 @@ export default function Gallery() {
                             ))
                         )}
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', margin: '2rem 0' }}>
+                            <button
+                                onClick={() => setCurrentPage(1)}
+                                disabled={currentPage === 1}
+                                style={{ padding: '0.5rem 1rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                                aria-label="First page"
+                            >
+                                ⏮️ First
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                style={{ padding: '0.5rem 1rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                                aria-label="Previous page"
+                            >
+                                ◀ Prev
+                            </button>
+                            <span style={{ padding: '0.5rem 1rem', alignSelf: 'center', fontWeight: 'bold' }}>
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                style={{ padding: '0.5rem 1rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                                aria-label="Next page"
+                            >
+                                Next ▶
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(totalPages)}
+                                disabled={currentPage === totalPages}
+                                style={{ padding: '0.5rem 1rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                                aria-label="Last page"
+                            >
+                                Last ⏭️
+                            </button>
+                        </div>
+                    )}
 
                     {/* CTA */}
                     <div className="gallery-cta card" data-aos="fade-up">

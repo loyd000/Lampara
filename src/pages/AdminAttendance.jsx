@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { logAction, AUDIT_ACTIONS } from '../lib/auditLog.js';
 import { loadOpenCV, detectFace, drawDetection, isOpenCVReady } from '../lib/opencv-face-detector.js';
 
 const MODEL_URL = '/models';
@@ -123,6 +124,7 @@ function WorkersTab() {
         try {
             const { error: err } = await supabase.from('workers').update({ status: 'active' }).eq('id', id);
             if (err) throw err;
+            await logAction(AUDIT_ACTIONS.WORKER_APPROVE, { workerId: id });
             await load();
         } catch (err) {
             setError(`❌ Could not approve worker: ${err.message}. Please try again.`);
@@ -138,6 +140,7 @@ function WorkersTab() {
         try {
             const { error: err } = await supabase.from('workers').update({ status: 'rejected' }).eq('id', id);
             if (err) throw err;
+            await logAction(AUDIT_ACTIONS.WORKER_REJECT, { workerId: id, workerName: name });
             await load();
         } catch (err) {
             setError(`❌ Could not reject "${name}": ${err.message}. Please try again.`);
@@ -156,6 +159,7 @@ function WorkersTab() {
             const { error: workerErr } = await supabase.from('workers').delete().eq('id', id);
             if (workerErr) throw new Error(`Could not delete worker record: ${workerErr.message}`);
             
+            await logAction(AUDIT_ACTIONS.WORKER_DELETE, { workerId: id, workerName: name });
             await load();
         } catch (err) {
             setError(`❌ Could not remove worker "${name}": ${err.message}. Contact support if issue persists.`);
@@ -168,6 +172,7 @@ function WorkersTab() {
             if (rate < 0) throw new Error('Daily rate cannot be negative');
             const { error: err } = await supabase.from('workers').update({ daily_rate: rate }).eq('id', id);
             if (err) throw err;
+            await logAction(AUDIT_ACTIONS.RATE_UPDATE, { workerId: id, newRate: rate });
             await load();
         } catch (err) {
             setError(`❌ Could not update daily rate: ${err.message}. Please try again.`);

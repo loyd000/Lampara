@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { checkRateLimit } from '../lib/rateLimit.js';
 import './Schedule.css';
 
 // ============================================================
@@ -289,6 +290,13 @@ function BookingModal({ date, dateDisplay, onClose, onSuccess }) {
         e.preventDefault();
         setError('');
         
+        // Check rate limit - max 3 booking attempts per 2 minutes
+        const rateLimitCheck = checkRateLimit('booking_form', { maxAttempts: 3, windowMs: 120000 });
+        if (rateLimitCheck.isLimited) {
+            setError(`❌ Too many booking attempts. Please wait ${rateLimitCheck.retryAfter} seconds before trying again.`);
+            return;
+        }
+        
         // Validate before submitting
         const validationError = validateBooking();
         if (validationError) {
@@ -352,29 +360,60 @@ function BookingModal({ date, dateDisplay, onClose, onSuccess }) {
                 <form onSubmit={handleSubmit} className="sched-modal__form" noValidate>
                     <div className="sched-field">
                         <label htmlFor="bk-name">Full Name *</label>
-                        <input id="bk-name" name="name" value={form.name} onChange={handleChange}
-                            required placeholder="Juan dela Cruz" />
+                        <input
+                            id="bk-name"
+                            name="name"
+                            value={form.name}
+                            onChange={handleChange}
+                            required
+                            placeholder="Juan dela Cruz"
+                            aria-label="Full Name"
+                            aria-required="true"
+                        />
                     </div>
 
                     <div className="sched-row">
                         <div className="sched-field">
                             <label htmlFor="bk-email">Email Address *</label>
-                            <input id="bk-email" name="email" type="email" value={form.email}
-                                onChange={handleChange} required placeholder="you@email.com" />
+                            <input
+                                id="bk-email"
+                                name="email"
+                                type="email"
+                                value={form.email}
+                                onChange={handleChange}
+                                required
+                                placeholder="you@email.com"
+                                aria-label="Email Address"
+                                aria-required="true"
+                                aria-describedby={error ? 'booking-error' : undefined}
+                            />
                         </div>
                         <div className="sched-field">
                             <label htmlFor="bk-phone">
                                 Phone <span className="sched-optional">(Optional)</span>
                             </label>
-                            <input id="bk-phone" name="phone" type="tel" value={form.phone}
-                                onChange={handleChange} placeholder="09XX XXX XXXX" />
+                            <input
+                                id="bk-phone"
+                                name="phone"
+                                type="tel"
+                                value={form.phone}
+                                onChange={handleChange}
+                                placeholder="09XX XXX XXXX"
+                                aria-label="Phone (optional)"
+                            />
                         </div>
                     </div>
 
                     <div className="sched-field">
                         <label htmlFor="bk-address">Property Address *</label>
-                        <input id="bk-address" name="address" value={form.address}
-                            onChange={handleChange} required
+                        <input
+                            id="bk-address"
+                            name="address"
+                            value={form.address}
+                            onChange={handleChange}
+                            required
+                            aria-label="Property Address"
+                            aria-required="true"
                             placeholder="e.g. Brgy. San Jose, Cavite City, Cavite" />
                     </div>
 
@@ -383,15 +422,30 @@ function BookingModal({ date, dateDisplay, onClose, onSuccess }) {
                             Message / Notes <span className="sched-optional">(Optional)</span>
                         </label>
                         <textarea id="bk-message" name="message" value={form.message}
-                            onChange={handleChange} rows={3}
-                            placeholder="Tell us about your property, current electric bill, system preference, or any questions…" />
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder="Tell us about your property, current electric bill, system preference, or any questions…"
+                            aria-label="Additional message or questions"
+                        />
                     </div>
 
-                    {error && <p className="sched-error">{error}</p>}
+                    {error && (
+                        <p id="booking-error" className="sched-error" role="alert">
+                            {error}
+                        </p>
+                    )}
 
                     <div className="sched-modal__actions">
-                        <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn btn-gold btn-lg" disabled={sending}>
+                        <button type="button" className="btn btn-outline" onClick={onClose} aria-label="Cancel booking">
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn btn-gold btn-lg"
+                            disabled={sending}
+                            aria-label={sending ? 'Submitting booking request' : 'Submit booking request'}
+                            aria-busy={sending}
+                        >
                             {sending ? 'Submitting…' : 'Submit Request'}
                         </button>
                     </div>

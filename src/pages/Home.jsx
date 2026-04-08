@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { checkRateLimit } from '../lib/rateLimit.js';
 import './Home.css';
 
 export default function Home() {
@@ -686,6 +687,13 @@ function Contact() {
         e.preventDefault();
         setError('');
         
+        // Check rate limit - max 5 submissions per minute
+        const rateLimitCheck = checkRateLimit('contact_form', { maxAttempts: 5, windowMs: 60000 });
+        if (rateLimitCheck.isLimited) {
+            setError(`❌ Too many submissions. Please wait ${rateLimitCheck.retryAfter} seconds before trying again.`);
+            return;
+        }
+        
         const validationError = validateEmail();
         if (validationError) {
             setError(validationError);
@@ -771,6 +779,8 @@ function Contact() {
                                             value={form.name}
                                             onChange={handleChange}
                                             required
+                                            aria-label="Full Name"
+                                            aria-required="true"
                                         />
                                     </div>
                                     <div className="contact__field">
@@ -782,6 +792,7 @@ function Contact() {
                                             placeholder="09XX XXX XXXX"
                                             value={form.phone}
                                             onChange={handleChange}
+                                            aria-label="Phone Number (optional)"
                                         />
                                     </div>
                                 </div>
@@ -795,6 +806,9 @@ function Contact() {
                                         value={form.email}
                                         onChange={handleChange}
                                         required
+                                        aria-label="Email Address"
+                                        aria-required="true"
+                                        aria-describedby={error ? 'contact-error' : undefined}
                                     />
                                 </div>
                                 <div className="contact__field">
@@ -807,10 +821,12 @@ function Contact() {
                                         value={form.message}
                                         onChange={handleChange}
                                         required
+                                        aria-label="Message"
+                                        aria-required="true"
                                     />
                                 </div>
                                 {status === 'error' && (
-                                    <p className="contact__error">
+                                    <p id="contact-error" className="contact__error" role="alert">
                                         ⚠ Something went wrong. Please try again or email us directly.
                                     </p>
                                 )}
@@ -819,6 +835,8 @@ function Contact() {
                                     type="submit"
                                     className="btn btn-gold btn-lg contact__submit"
                                     disabled={status === 'sending' || !isFormValid}
+                                    aria-label={status === 'sending' ? 'Sending message' : 'Send message'}
+                                    aria-busy={status === 'sending'}
                                 >
                                     {status === 'sending' ? 'Sending…' : 'Send Message'}
                                 </button>
