@@ -789,8 +789,9 @@ function DTRTab() {
             {dtrData && workerInfo && (
                 <>
                     <div className="dtr-header">
+                        <img src="/assets/logo.png" alt="Lampara" style={{ height: 48, marginBottom: 8 }} />
                         <h3>Daily Time Record</h3>
-                        <p style={{ fontWeight: 600, color: 'var(--navy)', fontSize: '1rem', marginBottom: 4 }}>{workerInfo.name}</p>
+                        <p style={{ fontWeight: 600, color: 'var(--navy)', fontSize: '1rem', margin: '4px 0' }}>{workerInfo.name}</p>
                         <p>{workerInfo.position || 'Worker'} &nbsp;·&nbsp; ID: {workerInfo.employee_id}</p>
                         <p style={{ marginTop: 4 }}>{monthLabel}</p>
                     </div>

@@ -758,6 +758,11 @@
 }
 
 @media print {
+    @page {
+        margin: 0.5cm;
+        size: auto;
+    }
+
     .admin-header,
     .admin-tabs,
     .dtr-controls,
@@ -766,11 +771,59 @@
     }
 
     .admin-main {
-        padding: 0;
+        padding: 0 !important;
     }
 
     body {
         background: #fff;
+        color: #000;
+        font-size: 10pt;
+    }
+
+    /* Compress the table heavily to fit 31+ rows on 1 page vertically */
+    .dtr-table {
+        font-size: 0.65rem;
+        min-width: 100%;
+    }
+
+    .dtr-table th {
+        padding: 4px;
+        background: #eee !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .dtr-table td {
+        padding: 3px 4px;
+        color: #000 !important;
+        height: 20px;
+    }
+
+    .dtr-header {
+        margin-bottom: 12px;
+        padding: 0;
+        border: none;
+    }
+
+    .dtr-header img {
+        height: 60px !important;
+        margin-bottom: 4px;
+    }
+
+    .dtr-summary {
+        margin-bottom: 12px;
+        gap: 8px;
+    }
+
+    .dtr-summary-card {
+        padding: 8px;
+        border-color: #ddd;
+    }
+
+    .dtr-summary-card__value {
+        font-size: 1.1rem;
+        color: #000;
     }
 }
 
