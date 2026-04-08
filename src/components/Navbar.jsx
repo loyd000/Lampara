@@ -86,6 +86,15 @@ export default function Navbar() {
                         )}
                     </ul>
 
+                    {/* Desktop CTA */}
+                    <a
+                        href={isHome ? '#contact' : '/#contact'}
+                        className="nav__cta"
+                        onClick={isHome ? (e) => handleAnchorClick(e, '#contact') : undefined}
+                    >
+                        Get Free Quote
+                    </a>
+
                     {/* Mobile hamburger */}
                     <button
                         className={`nav__hamburger ${menuOpen ? 'open' : ''}`}

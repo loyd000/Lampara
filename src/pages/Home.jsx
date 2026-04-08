@@ -17,6 +17,7 @@ export default function Home() {
             <Contact />
             <BackToTop />
             <MessengerFab />
+            <StickyQuoteBar />
         </main>
     );
 }
@@ -190,6 +191,19 @@ function About() {
                                 />
                             ))}
                         </div>
+                        {/* Dot indicators */}
+                        <div className="about__dots" role="tablist" aria-label="Image indicators">
+                            {ABOUT_IMAGES.map((img, i) => (
+                                <button
+                                    key={img.src}
+                                    role="tab"
+                                    aria-selected={i === activeIndex}
+                                    aria-label={`Show image ${i + 1}`}
+                                    className={`about__dot ${i === activeIndex ? 'about__dot--active' : ''}`}
+                                    onClick={() => setActiveIndex(i)}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -338,8 +352,14 @@ function Installations() {
                                     )}
                                 </div>
                                 <div className="installs__info">
+                                    {p.capacity && (
+                                        <span className="installs__capacity">{p.capacity}</span>
+                                    )}
                                     <h3>{p.title}</h3>
                                     <p>{p.specs}</p>
+                                    {p.location && (
+                                        <p className="installs__location">{p.location}</p>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -542,6 +562,19 @@ function Testimonials() {
                         </div>
                     ))}
                 </div>
+                <div className="text-center" style={{ marginTop: 'var(--sp-8)' }}>
+                    <a
+                        href="https://www.facebook.com/lamparaeis/reviews"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+                        </svg>
+                        View Reviews on Facebook
+                    </a>
+                </div>
             </div>
         </section>
     );
@@ -700,7 +733,7 @@ function Contact() {
                                         />
                                     </div>
                                     <div className="contact__field">
-                                        <label htmlFor="contact-phone">Phone Number</label>
+                                        <label htmlFor="contact-phone">Phone Number <span style={{ fontWeight: 400, opacity: 0.6 }}>(Optional)</span></label>
                                         <input
                                             id="contact-phone"
                                             type="tel"
@@ -848,5 +881,40 @@ function MessengerFab() {
                 <path d="M12 2C6.48 2 2 6.03 2 11c0 2.87 1.51 5.43 3.89 7.18H3v3.5l3.52-1.93c1.68.73 3.55 1.15 5.48 1.15 5.52 0 10-4.03 10-9S17.52 2 12 2zm1.19 12.11L10.5 11.23l-4.37 4.19 4.81-5.11 2.69 2.88 4.36-4.18-4.8 5.1z" />
             </svg>
         </a>
+    );
+}
+
+/* ============================
+   STICKY QUOTE BAR (Mobile)
+   ============================ */
+function StickyQuoteBar() {
+    const [hidden, setHidden] = useState(false);
+
+    // Hide the bar when the user scrolls into the contact section
+    useEffect(() => {
+        const contactEl = document.getElementById('contact');
+        if (!contactEl) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => setHidden(entry.isIntersecting),
+            { threshold: 0.1 }
+        );
+        observer.observe(contactEl);
+        return () => observer.disconnect();
+    }, []);
+
+    const handleClick = (e) => {
+        e.preventDefault();
+        const el = document.getElementById('contact');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    return (
+        <div className={`sticky-quote-bar ${hidden ? 'sticky-quote-bar--hidden' : ''}`}>
+            <span className="sticky-quote-bar__text">☀️ Ready to cut your electricity bill?</span>
+            <button className="sticky-quote-bar__btn" onClick={handleClick}>
+                Get Free Quote
+            </button>
+        </div>
     );
 }

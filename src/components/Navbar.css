@@ -73,6 +73,11 @@
     color: var(--navy);
 }
 
+/* Nav CTA — hidden on mobile, shown on desktop via media query */
+.nav__cta {
+    display: none;
+}
+
 /* Hamburger */
 .nav__hamburger {
     display: flex;
@@ -164,6 +169,26 @@
 @media (min-width: 1024px) {
     .nav__links {
         display: flex;
+    }
+
+    .nav__cta {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--sp-2) var(--sp-4);
+        font-size: 0.875rem;
+        font-weight: 600;
+        min-height: 38px;
+        border-radius: var(--radius-sm);
+        background: var(--gold);
+        color: var(--navy);
+        white-space: nowrap;
+        transition: background var(--duration) var(--ease), box-shadow var(--duration) var(--ease);
+        margin-left: var(--sp-2);
+    }
+
+    .nav__cta:hover {
+        background: var(--gold-dim);
+        box-shadow: var(--shadow-gold);
     }
 
     .nav__hamburger,
