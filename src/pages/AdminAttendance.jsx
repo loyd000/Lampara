@@ -789,11 +789,20 @@ function DTRTab() {
             {dtrData && workerInfo && (
                 <>
                     <div className="dtr-header">
-                        <img src="/assets/logo.png" alt="Lampara" style={{ height: 48, marginBottom: 8 }} />
-                        <h3>Daily Time Record</h3>
-                        <p style={{ fontWeight: 600, color: 'var(--navy)', fontSize: '1rem', margin: '4px 0' }}>{workerInfo.name}</p>
-                        <p>{workerInfo.position || 'Worker'} &nbsp;·&nbsp; ID: {workerInfo.employee_id}</p>
-                        <p style={{ marginTop: 4 }}>{monthLabel}</p>
+                        <img src="/assets/logo.png" alt="Lampara" style={{ height: 48, marginBottom: 4 }} />
+                        <h2 style={{ fontSize: '1.25rem', marginBottom: 2, color: 'var(--navy)' }}>Lampara Solar Services</h2>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 12 }}>123 Main St, City, Country · (123) 456-7890 · contact@lampara.com</p>
+                        
+                        <h3 style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12, marginTop: 12 }}>Daily Time Record</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
+                            <div style={{ textAlign: 'left' }}>
+                                <p style={{ fontWeight: 600, color: 'var(--navy)', fontSize: '1rem', margin: '4px 0' }}>{workerInfo.name}</p>
+                                <p>{workerInfo.position || 'Worker'} &nbsp;·&nbsp; ID: {workerInfo.employee_id}</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>{monthLabel}</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="dtr-summary">
@@ -815,7 +824,6 @@ function DTRTab() {
                         <table className="dtr-table">
                             <thead>
                                 <tr>
-                                    <th>Day</th>
                                     <th>Date</th>
                                     <th>Time In</th>
                                     <th>Time Out</th>
@@ -832,8 +840,7 @@ function DTRTab() {
                                             key={row.date}
                                             className={isSunday ? 'dtr-sunday' : isAbsent ? 'dtr-absent' : ''}
                                         >
-                                            <td>{row.dayName}</td>
-                                            <td>{row.day}</td>
+                                            <td>{row.dayName}, {row.day}</td>
                                             <td>{fmtTime(row.timeIn?.logged_at)}</td>
                                             <td>{fmtTime(row.timeOut?.logged_at)}</td>
                                             <td>{row.hours ?? '—'}</td>
@@ -846,7 +853,7 @@ function DTRTab() {
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: 'right', paddingRight: 'var(--sp-3)' }}>Total Hours Worked:</td>
+                                    <td colSpan="3" style={{ textAlign: 'right', paddingRight: 'var(--sp-3)' }}>Total Hours Worked:</td>
                                     <td>{totalHours}</td>
                                     <td />
                                 </tr>
@@ -854,11 +861,11 @@ function DTRTab() {
                         </table>
                     </div>
 
-                    <div style={{ marginTop: 'var(--sp-8)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-8)', padding: 'var(--sp-6) 0' }}>
-                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-2)', textAlign: 'center' }}>
+                    <div className="dtr-signatures" style={{ marginTop: 'var(--sp-4)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-8)', padding: 'var(--sp-4) 0 0 0' }}>
+                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-2)', textTransform: 'uppercase', textAlign: 'center' }}>
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Employee Signature</p>
                         </div>
-                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-2)', textAlign: 'center' }}>
+                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-2)', textTransform: 'uppercase', textAlign: 'center' }}>
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Verified by</p>
                         </div>
                     </div>
