@@ -55,7 +55,13 @@ export default function Lightbox({ images, index, onClose, onNavigate }) {
                 )}
 
                 <img
-                    src={images[index]}
+                    src={`${images[index]}?width=1200&resize=cover`}
+                    srcSet={`
+                        ${images[index]}?width=800&resize=cover 800w,
+                        ${images[index]}?width=1200&resize=cover 1200w,
+                        ${images[index]}?width=1920&resize=cover 1920w
+                    `.trim()}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
                     alt={`Image ${index + 1} of ${images.length}`}
                     className="lightbox__img"
                 />

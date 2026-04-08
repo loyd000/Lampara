@@ -323,11 +323,18 @@ function Installations() {
     }, []);
 
     const getCover = (project) => {
-        const photos = project.project_photos || [];
+        const photos = project?.project_photos || [];
         if (photos.length === 0) return null;
         return supabase.storage
             .from('project-images')
-            .getPublicUrl(photos[0].storage_path).data.publicUrl + '?width=600&resize=cover';
+            .getPublicUrl(photos[0].storage_path).data.publicUrl;
+    };
+
+    const getResponsiveSrcSet = (baseUrl, widths = [300, 600, 900]) => {
+        if (!baseUrl) return null;
+        return widths
+            .map((w) => `${baseUrl}?width=${w}&resize=cover ${w}w`)
+            .join(', ');
     };
 
     return (
@@ -348,7 +355,13 @@ function Installations() {
                             <div key={p.id} className="card installs__card" data-aos="zoom-in" data-aos-delay={idx * 100}>
                                 <div className="installs__img">
                                     {getCover(p) && (
-                                        <img src={getCover(p)} alt={p.title} loading="lazy" />
+                                        <img
+                                            src={`${getCover(p)}?width=600&resize=cover`}
+                                            srcSet={getResponsiveSrcSet(getCover(p))}
+                                            sizes="(max-width: 480px) 300px, (max-width: 1024px) 600px, 900px"
+                                            alt={p?.title || 'Project'}
+                                            loading="lazy"
+                                        />
                                     )}
                                 </div>
                                 <div className="installs__info">

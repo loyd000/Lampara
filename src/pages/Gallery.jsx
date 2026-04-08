@@ -22,10 +22,21 @@ const GalleryCard = memo(({ project, index, onOpen }) => {
 
     const getCover = (proj) => {
         const urls = getImageUrls(proj);
-        return urls[0] ? `${urls[0]}?width=600&resize=cover` : null;
+        return urls[0] ? urls[0] : null;
+    };
+
+    const getCoverSrcSet = (proj) => {
+        const baseUrl = getCover(proj);
+        if (!baseUrl) return null;
+        return `
+            ${baseUrl}?width=300&resize=cover 300w,
+            ${baseUrl}?width=600&resize=cover 600w,
+            ${baseUrl}?width=900&resize=cover 900w
+        `.trim();
     };
 
     const coverUrl = getCover(project);
+    const coverSrcSet = getCoverSrcSet(project);
     const photoCount = (project?.project_photos || []).length;
 
     return (
@@ -37,7 +48,13 @@ const GalleryCard = memo(({ project, index, onOpen }) => {
         >
             <div className="gallery-card__img">
                 {coverUrl && (
-                    <img src={coverUrl} alt={project?.title || 'Project'} loading="lazy" />
+                    <img
+                        src={`${coverUrl}?width=600&resize=cover`}
+                        srcSet={coverSrcSet}
+                        sizes="(max-width: 480px) 300px, (max-width: 1024px) 600px, 900px"
+                        alt={project?.title || 'Project'}
+                        loading="lazy"
+                    />
                 )}
                 <div className="gallery-card__overlay">
                     <span className="gallery-card__count">
@@ -97,7 +114,14 @@ export default function Gallery() {
 
     const getCover = (project) => {
         const urls = getImageUrls(project);
-        return urls[0] ? `${urls[0]}?width=600&resize=cover` : null;
+        return urls[0] ? urls[0] : null;
+    };
+
+    const getResponsiveSrcSet = (baseUrl, widths = [400, 800, 1200, 1600]) => {
+        if (!baseUrl) return null;
+        return widths
+            .map((w) => `${baseUrl}?width=${w}&resize=cover ${w}w`)
+            .join(', ');
     };
 
     const filtered = useMemo(() => {
