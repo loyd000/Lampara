@@ -153,9 +153,6 @@ function WorkersTab() {
             const { error: logsErr } = await supabase.from('attendance_logs').delete().eq('worker_id', id);
             if (logsErr) throw new Error(`Delete logs failed: ${logsErr.message}`);
             
-            const { error: adjErr } = await supabase.from('payroll_adjustments').delete().eq('worker_id', id);
-            if (adjErr) throw new Error(`Delete adjustments failed: ${adjErr.message}`);
-            
             const { error: workerErr } = await supabase.from('workers').delete().eq('id', id);
             if (workerErr) throw new Error(`Delete worker failed: ${workerErr.message}`);
             
