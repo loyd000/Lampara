@@ -1,24 +1,25 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import './Lightbox.css';
 
 export default function Lightbox({ images, index, onClose, onNavigate }) {
-    const handleKeyDown = useCallback(
-        (e) => {
-            if (e.key === 'Escape') onClose();
-            if (e.key === 'ArrowLeft') onNavigate(-1);
-            if (e.key === 'ArrowRight') onNavigate(1);
-        },
-        [onClose, onNavigate]
-    );
+    const onCloseRef = useRef(onClose);
+    const onNavigateRef = useRef(onNavigate);
+    onCloseRef.current = onClose;
+    onNavigateRef.current = onNavigate;
 
     useEffect(() => {
-        document.addEventListener('keydown', handleKeyDown);
+        const handler = (e) => {
+            if (e.key === 'Escape') onCloseRef.current();
+            if (e.key === 'ArrowLeft') onNavigateRef.current(-1);
+            if (e.key === 'ArrowRight') onNavigateRef.current(1);
+        };
+        document.addEventListener('keydown', handler);
         document.body.style.overflow = 'hidden';
         return () => {
-            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keydown', handler);
             document.body.style.overflow = '';
         };
-    }, [handleKeyDown]);
+    }, []);
 
     if (!images || images.length === 0) return null;
 

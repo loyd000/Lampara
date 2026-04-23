@@ -39,8 +39,7 @@ export async function logAction(action, metadata = {}) {
         
         const { error } = await supabase
             .from('audit_logs')
-            .insert([logEntry])
-            .single();
+            .insert([logEntry]);
         
         if (error) {
             console.error('Failed to log action:', error);

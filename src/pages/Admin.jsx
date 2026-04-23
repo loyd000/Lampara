@@ -147,7 +147,8 @@ function Dashboard({ user }) {
     const [modal, setModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, title }
-    const [deleting, setDeleting] = useState(false); // Track deletion in progress
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
 
     const loadProjects = async () => {
         setLoading(true);
@@ -184,18 +185,18 @@ function Dashboard({ user }) {
         try {
             // Delete photos from storage
             if (photos.length > 0) {
-                const storageErr = await supabase.storage
+                const { error: storageErr } = await supabase.storage
                     .from('project-images')
                     .remove(photos.map((p) => p.storage_path));
                 if (storageErr) throw new Error(`Could not delete project images: ${storageErr.message}`);
             }
 
             // Delete photo records
-            const photoErr = await supabase.from('project_photos').delete().eq('project_id', id);
+            const { error: photoErr } = await supabase.from('project_photos').delete().eq('project_id', id);
             if (photoErr) throw new Error(`Could not delete photo records: ${photoErr.message}`);
 
             // Delete project
-            const projectErr = await supabase.from('projects').delete().eq('id', id);
+            const { error: projectErr } = await supabase.from('projects').delete().eq('id', id);
             if (projectErr) throw new Error(`Could not delete project record: ${projectErr.message}`);
             
             await logAction(AUDIT_ACTIONS.PROJECT_DELETE, { projectId: id, title: projectTitle });
@@ -204,7 +205,7 @@ function Dashboard({ user }) {
             setDeleteConfirm(null);
         } catch (err) {
             console.error('Delete failed:', err);
-            setError(`❌ Failed to delete "${projectTitle}": ${err.message}`);
+            setDeleteError(`❌ Failed to delete "${projectTitle}": ${err.message}`);
         } finally {
             setDeleting(false);
         }
@@ -314,7 +315,7 @@ function Dashboard({ user }) {
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 1000
-                }} onClick={() => setDeleteConfirm(null)}>
+                }} onClick={() => { setDeleteConfirm(null); setDeleteError(''); }}>
                     <div style={{
                         background: 'white', padding: '2rem', borderRadius: '8px', maxWidth: '400px',
                         boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
@@ -323,10 +324,13 @@ function Dashboard({ user }) {
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
                             Are you sure you want to delete <strong>"{deleteConfirm.title}"</strong> and all its photos? This action cannot be undone.
                         </p>
+                        {deleteError && (
+                            <p style={{ color: 'var(--error)', fontSize: '0.875rem', marginBottom: '1rem' }}>{deleteError}</p>
+                        )}
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                             <button
                                 className="btn btn-outline"
-                                onClick={() => setDeleteConfirm(null)}
+                                onClick={() => { setDeleteConfirm(null); setDeleteError(''); }}
                                 disabled={deleting}
                                 style={{ padding: '0.5rem 1rem', opacity: deleting ? 0.6 : 1 }}
                             >
@@ -381,10 +385,10 @@ function ProjectModal({ project, onClose, onSaved }) {
         if (!window.confirm('Remove this photo?')) return;
         try {
             setError('');
-            const storageErr = await supabase.storage.from('project-images').remove([photo.storage_path]);
+            const { error: storageErr } = await supabase.storage.from('project-images').remove([photo.storage_path]);
             if (storageErr) throw new Error(`Could not delete image file: ${storageErr.message}`);
-            
-            const dbErr = await supabase.from('project_photos').delete().eq('id', photo.id);
+
+            const { error: dbErr } = await supabase.from('project_photos').delete().eq('id', photo.id);
             if (dbErr) throw new Error(`Could not delete photo record: ${dbErr.message}`);
             
             setExistingPhotos((prev) => prev.filter((p) => p.id !== photo.id));

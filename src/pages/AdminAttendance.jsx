@@ -1018,19 +1018,22 @@ function PayrollTab() {
         const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
         const monthStr = selectedMonth;
 
+        try {
         // Fetch all attendance logs for the month
-        const { data: logs } = await supabase
+        const { data: logs, error: logsErr } = await supabase
             .from('attendance_logs')
             .select('worker_id, action, logged_at, date, type')
             .gte('date', startDate)
             .lte('date', endDate)
             .order('logged_at', { ascending: true });
+        if (logsErr) throw logsErr;
 
         // Fetch adjustments for this month
-        const { data: adjData } = await supabase
+        const { data: adjData, error: adjErr } = await supabase
             .from('payroll_adjustments')
             .select('*')
             .eq('month', monthStr);
+        if (adjErr) throw adjErr;
 
         const adjMap = {};
         (adjData || []).forEach(a => { adjMap[a.worker_id] = a; });
@@ -1112,7 +1115,11 @@ function PayrollTab() {
         });
 
         setPayrollData(rows);
-        setLoading(false);
+        } catch (err) {
+            console.error('Failed to generate payroll:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const openAdjEditor = (workerId) => {
@@ -1138,17 +1145,19 @@ function PayrollTab() {
             month: selectedMonth,
             ...editForm,
         };
-        // Upsert
-        const { error } = await supabase
-            .from('payroll_adjustments')
-            .upsert(payload, { onConflict: 'worker_id,month' });
-        if (!error) {
+        try {
+            const { error } = await supabase
+                .from('payroll_adjustments')
+                .upsert(payload, { onConflict: 'worker_id,month' });
+            if (error) throw error;
             setAdjustments(prev => ({ ...prev, [editingWorkerId]: { ...prev[editingWorkerId], ...payload } }));
             setEditingWorkerId(null);
-            // Regenerate
             generatePayroll();
+        } catch (err) {
+            console.error('Failed to save adjustment:', err);
+        } finally {
+            setSavingAdj(false);
         }
-        setSavingAdj(false);
     };
 
     const monthLabel = selectedMonth

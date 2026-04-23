@@ -108,7 +108,11 @@ export default function Attendance() {
                 action: 'time_out',
                 type: entry.type || 'regular',
                 logged_at: autoOutTime.toISOString(),
-                date: autoOutTime.toISOString().split('T')[0],
+                date: [
+                    autoOutTime.getFullYear(),
+                    String(autoOutTime.getMonth() + 1).padStart(2, '0'),
+                    String(autoOutTime.getDate()).padStart(2, '0'),
+                ].join('-'),
             });
             // Return the newly inserted time_out as last action
             return { action: 'time_out', logged_at: autoOutTime.toISOString(), type: entry.type || 'regular' };
@@ -715,6 +719,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
     const intervalRef = useRef(null);
+    const mountedRef = useRef(true);
     const [status, setStatus] = useState('scanning');
     const [statusMsg, setStatusMsg] = useState('Position your face in the frame');
     const verifiedRef = useRef(false);
@@ -738,6 +743,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
         });
         return () => {
             mounted = false;
+            mountedRef.current = false;
             clearTimeout(intervalRef.current);
             streamRef.current?.getTracks().forEach(t => t.stop());
         };
@@ -775,7 +781,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
             isVerifying = true;
 
             getFaceApi().then(async (faceapi) => {
-                if (verifiedRef.current) return;
+                if (verifiedRef.current || !mountedRef.current) return;
 
                 // We do everything in one go: find the box + landmarks + descriptor
                 const detection = await faceapi
@@ -783,7 +789,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
                     .withFaceLandmarks()
                     .withFaceDescriptor();
 
-                if (verifiedRef.current) return;
+                if (verifiedRef.current || !mountedRef.current) { isVerifying = false; return; }
                 isVerifying = false;
 
                 if (!detection) {
@@ -796,7 +802,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
 
                 // Draw the box using pure canvas
                 drawFaceBox(canvasRef.current, video, detection.detection.box);
-                
+
                 setStatus('detected');
                 setStatusMsg('Verifying identity…');
 
@@ -805,6 +811,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
                     setStatus('nomatch');
                     setStatusMsg('Face does not match. Try again.');
                     intervalRef.current = setTimeout(() => {
+                        if (!mountedRef.current) return;
                         setStatus('scanning');
                         setStatusMsg('Position your face in the frame');
                         intervalRef.current = setTimeout(detect, 200);
@@ -819,6 +826,7 @@ function CameraScreen({ worker, onVerified, onCancel }) {
                 setStatusMsg('Identity verified!');
                 setTimeout(onVerified, 700);
             }).catch(() => {
+                if (!mountedRef.current) return;
                 isVerifying = false;
                 intervalRef.current = setTimeout(detect, 500);
             });
@@ -945,10 +953,12 @@ function ConfirmScreen({ worker, lastAction, pendingOT, onRecord, onStartOT, onR
    ============================================================ */
 function SuccessScreen({ data, onDone, formatTime }) {
     const isIn = data.action === 'time_in';
+    const onDoneRef = useRef(onDone);
+    onDoneRef.current = onDone;
     useEffect(() => {
-        const t = setTimeout(onDone, 6000);
+        const t = setTimeout(() => onDoneRef.current(), 6000);
         return () => clearTimeout(t);
-    }, [onDone]);
+    }, []);
     return (
         <div className="att-success">
             <div className={`att-success__icon ${isIn ? 'att-success__icon--in' : 'att-success__icon--out'}`}>

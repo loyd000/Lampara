@@ -9,6 +9,7 @@ import './Schedule.css';
 const EMAILJS_SERVICE_ID      = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_COMPANY_TPL     = import.meta.env.VITE_EMAILJS_BOOKING_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY      = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const EMAILJS_CONFIGURED      = !!(EMAILJS_SERVICE_ID && EMAILJS_COMPANY_TPL && EMAILJS_PUBLIC_KEY);
 // ============================================================
 
 const MONTH_NAMES = [
@@ -61,11 +62,14 @@ async function sendEmail(templateId, params) {
 /* ============================================================
    PUBLIC SCHEDULE PAGE
    ============================================================ */
-export default function Schedule() {
-    const today      = new Date();
-    const todayStr   = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+function getTodayStr() {
+    const d = new Date();
+    return toDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+}
 
-    const [viewDate, setViewDate]         = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+export default function Schedule() {
+    const [todayStr, setTodayStr]         = useState(getTodayStr);
+    const [viewDate, setViewDate]         = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
     const [slots, setSlots]               = useState({});
     const [loading, setLoading]           = useState(true);
     const [bookingDate, setBookingDate]   = useState(null);
@@ -74,22 +78,33 @@ export default function Schedule() {
     const year  = viewDate.getFullYear();
     const month = viewDate.getMonth();
 
-    useEffect(() => { loadSlots(); }, [viewDate]);
+    // Refresh todayStr at midnight so past-day locking stays accurate
+    useEffect(() => {
+        const now = new Date();
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const t = setTimeout(() => setTodayStr(getTodayStr()), midnight - now);
+        return () => clearTimeout(t);
+    }, [todayStr]);
 
-    async function loadSlots() {
+    useEffect(() => {
+        let cancelled = false;
         setLoading(true);
         const start = toDateStr(year, month, 1);
         const end   = toDateStr(year, month, new Date(year, month + 1, 0).getDate());
-        const { data } = await supabase
+        supabase
             .from('schedule_slots')
             .select('*')
             .gte('date', start)
-            .lte('date', end);
-        const map = {};
-        (data || []).forEach(s => { map[s.date] = s; });
-        setSlots(map);
-        setLoading(false);
-    }
+            .lte('date', end)
+            .then(({ data }) => {
+                if (cancelled) return;
+                const map = {};
+                (data || []).forEach(s => { map[s.date] = s; });
+                setSlots(map);
+                setLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [viewDate]);
 
     const firstDayOfWeek = new Date(year, month, 1).getDay();
     const daysInMonth    = new Date(year, month + 1, 0).getDate();
@@ -321,20 +336,20 @@ function BookingModal({ date, dateDisplay, onClose, onSuccess }) {
             const { error: dbErr } = await supabase.from('bookings').insert(sanitized);
             if (dbErr) throw new Error(`Database error: ${dbErr.message}`);
 
-            // 2. Notify company
-            const emailErr = await sendEmail(EMAILJS_COMPANY_TPL, {
-                booking_date:   dateDisplay,
-                client_name:    sanitized.name,
-                client_email:   sanitized.email,
-                client_phone:   sanitized.phone   || 'Not provided',
-                client_address: sanitized.address,
-                client_message: sanitized.message || 'No additional notes',
-                to_email:       'lamparaeis@gmail.com',
-            });
-            
-            // Email failure is not critical - booking already saved
-            if (emailErr) {
-                console.warn('Email notification failed:', emailErr);
+            // 2. Notify company (skip if EmailJS is not configured)
+            if (EMAILJS_CONFIGURED) {
+                const emailErr = await sendEmail(EMAILJS_COMPANY_TPL, {
+                    booking_date:   dateDisplay,
+                    client_name:    sanitized.name,
+                    client_email:   sanitized.email,
+                    client_phone:   sanitized.phone   || 'Not provided',
+                    client_address: sanitized.address,
+                    client_message: sanitized.message || 'No additional notes',
+                    to_email:       'lamparaeis@gmail.com',
+                });
+                if (emailErr) {
+                    console.warn('Email notification failed:', emailErr);
+                }
             }
 
             onSuccess('Booking submitted! We\'ll reach out within 24 hours to confirm your appointment.');
