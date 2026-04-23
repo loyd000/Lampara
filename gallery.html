@@ -94,13 +94,13 @@
     </section>
 
     <!-- Lightbox Modal -->
-    <div id="lightbox" class="lightbox">
+    <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Project photo viewer">
         <div class="lightbox-content">
-            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-            <button class="lightbox-prev" onclick="changeLightboxImage(-1)">&#10094;</button>
-            <button class="lightbox-next" onclick="changeLightboxImage(1)">&#10095;</button>
+            <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close photo viewer">&times;</button>
+            <button class="lightbox-prev" onclick="changeLightboxImage(-1)" aria-label="Previous photo">&#10094;</button>
+            <button class="lightbox-next" onclick="changeLightboxImage(1)" aria-label="Next photo">&#10095;</button>
             <img id="lightbox-image" src="" alt="Project image">
-            <div class="lightbox-caption" id="lightbox-caption"></div>
+            <div class="lightbox-caption" id="lightbox-caption" aria-live="polite"></div>
         </div>
     </div>
 

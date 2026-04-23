@@ -20,6 +20,7 @@ const photoPreview = document.getElementById('photoPreview');
 let currentUser = null;
 let currentProject = null;
 let selectedFiles = [];
+let objectUrls = [];
 
 // Initialize
 init();
@@ -56,6 +57,25 @@ function setupEventListeners() {
     projectModal.addEventListener('click', (e) => {
         if (e.target === projectModal) closeModal();
     });
+
+    // Event delegation for project list edit/delete buttons
+    projectsList.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-action="edit"]');
+        const deleteBtn = e.target.closest('[data-action="delete"]');
+        if (editBtn) editProject(editBtn.dataset.projectId);
+        if (deleteBtn) deleteProject(deleteBtn.dataset.projectId);
+    });
+
+    // Event delegation for photo remove buttons (both new uploads and existing photos)
+    photoPreview.addEventListener('click', (e) => {
+        const btn = e.target.closest('.photo-remove');
+        if (!btn) return;
+        if (btn.dataset.photoId) {
+            removeExistingPhoto(btn.dataset.photoId);
+        } else if (btn.dataset.index !== undefined) {
+            removePhoto(Number(btn.dataset.index));
+        }
+    });
 }
 
 // ========================================
@@ -85,7 +105,11 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() {
-    await supabaseClient.auth.signOut();
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (e) {
+        console.error('Logout error:', e);
+    }
     currentUser = null;
     showLogin();
 }
@@ -137,8 +161,8 @@ function renderProjects(projects) {
                 ${project.project_photos.length > 4 ? `<span style="font-size: 12px; color: #666;">+${project.project_photos.length - 4} more</span>` : ''}
             </div>
             <div class="project-actions">
-                <button class="btn btn-secondary" onclick="editProject('${project.id}')">Edit</button>
-                <button class="btn btn-danger" onclick="deleteProject('${project.id}')">Delete</button>
+                <button class="btn btn-secondary" data-action="edit" data-project-id="${project.id}">Edit</button>
+                <button class="btn btn-danger" data-action="delete" data-project-id="${project.id}">Delete</button>
             </div>
         </div>
     `).join('');
@@ -226,7 +250,7 @@ async function editProject(projectId) {
     photoPreview.innerHTML = project.project_photos.map(photo => `
         <div class="photo-preview-item">
             <img src="${supabaseClient.storage.from('project-images').getPublicUrl(photo.storage_path).data.publicUrl}?width=200&resize=cover" alt="" loading="lazy">
-            <button type="button" class="photo-remove" onclick="removeExistingPhoto('${photo.id}')">×</button>
+            <button type="button" class="photo-remove" data-photo-id="${photo.id}">×</button>
         </div>
     `).join('');
 
@@ -241,29 +265,29 @@ async function deleteProject(projectId) {
 
     showLoading(true);
 
-    // Delete photos from storage first
-    const { data: photos } = await supabaseClient
-        .from('project_photos')
-        .select('storage_path')
-        .eq('project_id', projectId);
+    try {
+        const { data: photos } = await supabaseClient
+            .from('project_photos')
+            .select('storage_path')
+            .eq('project_id', projectId);
 
-    if (photos && photos.length > 0) {
-        const paths = photos.map(p => p.storage_path);
-        await supabaseClient.storage.from('project-images').remove(paths);
-    }
+        if (photos && photos.length > 0) {
+            const paths = photos.map(p => p.storage_path);
+            await supabaseClient.storage.from('project-images').remove(paths);
+        }
 
-    // Delete project (cascade will delete project_photos)
-    const { error } = await supabaseClient
-        .from('projects')
-        .delete()
-        .eq('id', projectId);
+        const { error } = await supabaseClient
+            .from('projects')
+            .delete()
+            .eq('id', projectId);
 
-    showLoading(false);
-
-    if (!error) {
+        if (error) throw error;
         loadProjects();
-    } else {
-        alert('Error deleting project');
+    } catch (e) {
+        console.error('Error deleting project:', e);
+        alert('Error deleting project. Please try again.');
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -277,10 +301,13 @@ function handlePhotoSelect(e) {
 }
 
 function displayPhotoPreview() {
-    photoPreview.innerHTML = selectedFiles.map((file, index) => `
+    objectUrls.forEach(url => URL.revokeObjectURL(url));
+    objectUrls = selectedFiles.map(file => URL.createObjectURL(file));
+
+    photoPreview.innerHTML = objectUrls.map((url, index) => `
         <div class="photo-preview-item">
-            <img src="${URL.createObjectURL(file)}" alt="">
-            <button type="button" class="photo-remove" onclick="removePhoto(${index})">×</button>
+            <img src="${url}" alt="">
+            <button type="button" class="photo-remove" data-index="${index}">×</button>
         </div>
     `).join('');
 }
@@ -295,27 +322,36 @@ async function removeExistingPhoto(photoId) {
 
     showLoading(true);
 
-    // Get storage path
-    const { data: photo } = await supabaseClient
-        .from('project_photos')
-        .select('storage_path')
-        .eq('id', photoId)
-        .single();
+    try {
+        const { data: photo, error: fetchError } = await supabaseClient
+            .from('project_photos')
+            .select('storage_path')
+            .eq('id', photoId)
+            .single();
 
-    // Delete from storage
-    await supabaseClient.storage.from('project-images').remove([photo.storage_path]);
+        if (fetchError) throw fetchError;
 
-    // Delete from database
-    await supabaseClient
-        .from('project_photos')
-        .delete()
-        .eq('id', photoId);
+        const { error: storageError } = await supabaseClient.storage
+            .from('project-images')
+            .remove([photo.storage_path]);
 
-    showLoading(false);
+        if (storageError) throw storageError;
 
-    // Reload form
-    const projectId = document.getElementById('projectId').value;
-    editProject(projectId);
+        const { error: dbError } = await supabaseClient
+            .from('project_photos')
+            .delete()
+            .eq('id', photoId);
+
+        if (dbError) throw dbError;
+
+        const projectId = document.getElementById('projectId').value;
+        editProject(projectId);
+    } catch (e) {
+        console.error('Error removing photo:', e);
+        alert('Failed to delete photo. Please try again.');
+    } finally {
+        showLoading(false);
+    }
 }
 
 async function uploadPhotos(projectId) {
@@ -371,6 +407,9 @@ function openProjectModal() {
 
 function closeModal() {
     projectModal.classList.remove('active');
+    objectUrls.forEach(url => URL.revokeObjectURL(url));
+    objectUrls = [];
+    selectedFiles = [];
 }
 
 function showLoading(show) {

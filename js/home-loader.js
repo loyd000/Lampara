@@ -32,7 +32,7 @@ async function loadFeaturedProjects() {
         if (error) throw error;
 
         if (!projects || projects.length === 0) {
-            grid.innerHTML = '<p class="text-centercol-span-3">No projects found.</p>';
+            grid.innerHTML = '<p class="text-center col-span-3">No projects found.</p>';
             return;
         }
 

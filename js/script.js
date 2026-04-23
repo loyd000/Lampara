@@ -12,15 +12,21 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Scroll Effect
+    let navScrollTicking = false;
     window.addEventListener('scroll', function () {
-        const navbar = document.querySelector('.navbar-glass');
-        if (!navbar) return;
-
-        if (window.scrollY > 50) { // Trigger earlier than 100 for smoother feel
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
+        if (navScrollTicking) return;
+        navScrollTicking = true;
+        requestAnimationFrame(() => {
+            const navbar = document.querySelector('.navbar-glass');
+            if (navbar) {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            }
+            navScrollTicking = false;
+        });
     });
 
     // Mobile Menu
@@ -78,8 +84,14 @@ async function calculateSavings() {
     const ELECTRICITY_RATE = 12; // PHP per kWh
     const DAYS_PER_MONTH = 30;
 
-    const response = await fetch('config/pricing.json');
-    const systemPrices = await response.json();
+    let systemPrices = {};
+    try {
+        const response = await fetch('config/pricing.json');
+        if (!response.ok) throw new Error('Failed to load pricing data');
+        systemPrices = await response.json();
+    } catch (e) {
+        console.error('Error loading pricing config:', e);
+    }
 
     // Calculate production and savings based on system size
     // Formula: Size * Sun Hours * Derating * Rate * Days
@@ -127,10 +139,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         // Close mobile menu if open
         const menu = document.getElementById('nav-menu');
         const menuToggle = document.querySelector('.menu-toggle');
-        menu.classList.remove('active');
-        if (menuToggle) {
-            menuToggle.classList.remove('active');
-        }
+        if (menu) menu.classList.remove('active');
+        if (menuToggle) menuToggle.classList.remove('active');
     });
 });
 
@@ -162,12 +172,18 @@ function initFloatingElements() {
     const backToTop = document.getElementById('backToTop');
     if (!backToTop) return;
 
+    let backToTopTicking = false;
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 500) {
-            backToTop.classList.add('visible');
-        } else {
-            backToTop.classList.remove('visible');
-        }
+        if (backToTopTicking) return;
+        backToTopTicking = true;
+        requestAnimationFrame(() => {
+            if (window.scrollY > 500) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+            backToTopTicking = false;
+        });
     });
 
     backToTop.addEventListener('click', (e) => {
