@@ -396,6 +396,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
+    const cameraActiveRef = useRef(false);
     const [captureStatus, setCaptureStatus] = useState('');
     const [captureStatusType, setCaptureStatusType] = useState('warn');
     const videoRef = useRef(null);
@@ -411,6 +412,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
             streamRef.current = stream;
+            cameraActiveRef.current = true;
             setCameraActive(true); // mount the <video> element first
         } catch {
             setCaptureStatus('Camera access denied.');
@@ -442,7 +444,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
         const loop = async () => {
             const video = videoRef.current;
             // Stop loop if camera is no longer active
-            if (!video || video.readyState < 2 || !cameraActive) {
+            if (!video || video.readyState < 2 || !cameraActiveRef.current) {
                 return;
             }
             
@@ -465,7 +467,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
             }
             
             // Schedule next loop only if still active
-            if (cameraActive && videoRef.current?.readyState >= 2) {
+            if (cameraActiveRef.current && videoRef.current?.readyState >= 2) {
                 detectionRef.current = setTimeout(loop, 200);
             }
         };
@@ -495,6 +497,7 @@ function RegisterScreen({ cvReady, onBack, onSubmitted }) {
     };
 
     const stopCamera = () => {
+        cameraActiveRef.current = false;
         setCameraActive(false);
         
         // Clear detection timeout

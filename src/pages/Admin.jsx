@@ -364,10 +364,17 @@ function ProjectModal({ project, onClose, onSaved }) {
         description: project?.description || '',
     });
     const [files, setFiles] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
     const [existingPhotos, setExistingPhotos] = useState(project?.project_photos || []);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const fileRef = useRef(null);
+
+    useEffect(() => {
+        const urls = files.map((f) => URL.createObjectURL(f));
+        setPreviewUrls(urls);
+        return () => { urls.forEach((u) => URL.revokeObjectURL(u)); };
+    }, [files]);
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -525,9 +532,9 @@ function ProjectModal({ project, onClose, onSaved }) {
                         </button>
                         {files.length > 0 && (
                             <div className="admin-photos__grid" style={{ marginTop: 'var(--sp-3)' }}>
-                                {files.map((f, i) => (
+                                {files.map((_, i) => (
                                     <div key={i} className="admin-photos__item">
-                                        <img src={URL.createObjectURL(f)} alt="" />
+                                        <img src={previewUrls[i]} alt="" />
                                         <button type="button" onClick={() => removeFile(i)}>&times;</button>
                                     </div>
                                 ))}

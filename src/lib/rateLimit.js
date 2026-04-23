@@ -24,13 +24,16 @@ export function checkRateLimit(key, config = DEFAULT_CONFIG) {
     const now = Date.now();
     let record = RATE_LIMIT_STORE.get(key);
     
-    // Initialize or reset record if expired
-    if (!record || now > record.blockUntil) {
-        record = {
-            attempts: [],
-            blockUntil: 0,
-        };
+    // Initialize record if it doesn't exist
+    if (!record) {
+        record = { attempts: [], blockUntil: 0 };
         RATE_LIMIT_STORE.set(key, record);
+    }
+
+    // Reset record if a prior block has fully expired
+    if (record.blockUntil > 0 && now > record.blockUntil) {
+        record.attempts = [];
+        record.blockUntil = 0;
     }
     
     // Check if currently blocked

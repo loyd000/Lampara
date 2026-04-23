@@ -32,6 +32,7 @@ function Hero() {
 
     // Fetch installation photos for the background slideshow
     useEffect(() => {
+        let cancelled = false;
         async function loadBgImages() {
             try {
                 const { data, error } = await supabase
@@ -39,6 +40,7 @@ function Hero() {
                     .select('storage_path')
                     .limit(6);
 
+                if (cancelled) return;
                 if (error) throw error;
                 if (data && data.length > 0) {
                     const urls = data.map((photo) =>
@@ -49,10 +51,11 @@ function Hero() {
                     setBgImages(urls);
                 }
             } catch (err) {
-                console.error('Error loading hero bg images:', err);
+                if (!cancelled) console.error('Error loading hero bg images:', err);
             }
         }
         loadBgImages();
+        return () => { cancelled = true; };
     }, []);
 
     // Rotate through images every 5 seconds
@@ -302,8 +305,10 @@ function Packages() {
 function Installations() {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(false);
 
     useEffect(() => {
+        let cancelled = false;
         async function load() {
             try {
                 const { data, error } = await supabase
@@ -312,15 +317,17 @@ function Installations() {
                     .order('order_index', { ascending: false })
                     .limit(3);
 
+                if (cancelled) return;
                 if (error) throw error;
                 setProjects(data || []);
             } catch (err) {
-                console.error('Error loading featured projects:', err);
+                if (!cancelled) { console.error('Error loading featured projects:', err); setFetchError(true); }
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         }
         load();
+        return () => { cancelled = true; };
     }, []);
 
     const getCover = (project) => {
@@ -348,7 +355,11 @@ function Installations() {
                 </div>
 
                 <div className="installs__grid">
-                    {loading
+                    {fetchError ? (
+                        <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            Unable to load projects. Please refresh the page.
+                        </p>
+                    ) : loading
                         ? [0, 1, 2].map((i) => (
                             <div key={i} className="skeleton installs__skeleton" />
                         ))

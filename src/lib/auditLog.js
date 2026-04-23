@@ -34,7 +34,7 @@ export async function logAction(action, metadata = {}) {
             user_email: user?.email,
             metadata: JSON.stringify(metadata),
             timestamp: new Date().toISOString(),
-            ip_address: await getClientIp(),
+            ip_address: 'unknown',
         };
         
         const { error } = await supabase
@@ -47,20 +47,6 @@ export async function logAction(action, metadata = {}) {
         }
     } catch (err) {
         console.error('Audit logging error:', err);
-    }
-}
-
-/**
- * Get client IP address (best effort)
- * @returns {Promise<string>}
- */
-async function getClientIp() {
-    try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        return data.ip;
-    } catch {
-        return 'unknown';
     }
 }
 
