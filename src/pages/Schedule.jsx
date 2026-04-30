@@ -233,7 +233,7 @@ export default function Schedule() {
                         </div>
 
                         <p className="sched-asof">
-                            as of {today.toLocaleDateString('en-PH', { month:'long', day:'numeric', year:'numeric' })}
+                            as of {new Date(todayStr + 'T00:00:00').toLocaleDateString('en-PH', { month:'long', day:'numeric', year:'numeric' })}
                         </p>
                     </div>
                 </div>

@@ -10,6 +10,7 @@
     },
     "dependencies": {
         "@supabase/supabase-js": "^2.99.1",
+        "@vercel/analytics": "^2.0.1",
         "@vladmandic/face-api": "^1.7.15",
         "aos": "^2.3.4",
         "react": "^19.0.0",
